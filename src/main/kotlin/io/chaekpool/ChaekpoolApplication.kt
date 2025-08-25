@@ -7,5 +7,5 @@ import org.springframework.boot.runApplication
 class ChaekpoolApplication
 
 fun main(args: Array<String>) {
-	runApplication<ChaekpoolApplication>(*args)
+    runApplication<ChaekpoolApplication>(*args)
 }
