@@ -4,7 +4,7 @@ CREATE TABLE users
     username          VARCHAR(100) UNIQUE,
     email             VARCHAR(255) UNIQUE,
     profile_image_url TEXT,
-    visibility        visibility_type  NOT NULL DEFAULT 'public',
+    visibility        visibility_type  NOT NULL DEFAULT 'PUBLIC',
     created_at        TIMESTAMP                 DEFAULT CURRENT_TIMESTAMP,
     updated_at        TIMESTAMP,
     last_login_at     TIMESTAMP,
