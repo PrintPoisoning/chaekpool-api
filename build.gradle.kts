@@ -1,3 +1,5 @@
+extra["spring-cloud-version"] = "2025.0.0"
+
 plugins {
     kotlin("jvm") version "2.1.20"
     kotlin("plugin.spring") version "2.1.20"
@@ -46,12 +48,21 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 
+    // === Open Feign Client ===
+    implementation("org.springframework.cloud:spring-cloud-starter-openfeign")
+
     // === Testing ===
     testImplementation("org.springframework.boot:spring-boot-starter-test") {
         exclude(group = "org.junit.vintage")
     }
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+dependencyManagement {
+    imports {
+        mavenBom("org.springframework.cloud:spring-cloud-dependencies:${property("spring-cloud-version")}")
+    }
 }
 
 kotlin {
