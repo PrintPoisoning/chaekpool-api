@@ -1,26 +1,48 @@
-spring:
-  application:
-    name: Chaekpool
+server:
+  address:
+  port: ${SERVER_PORT:8080}
 
+logging:
+  level:
+    root: INFO
+    org.springframework.security: DEBUG
+    io.chaekpool.auth: DEBUG
+    io.chaekpool.common.logger: DEBUG
+
+spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/chaekpool_app_local
-    username: local
-    password: "dev12#$"
+    url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
     driver-class-name: org.postgresql.Driver
+
+  jpa:
+    open-in-view: false
 
   data:
     redis:
-      host: localhost
-      port: 6379
-      password: "dev1234"
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD}
 
-  flyway:
-    enabled: true
-    url: jdbc:postgresql://localhost:5432/chaekpool_app_local
-    user: local
-    password: "dev12#$"
-    locations:
-      - classpath:db/migration/auth
-    baseline-on-migrate: true
-    validate-on-migrate: true
-    clean-disabled: true
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            loggerLevel: FULL
+
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-validity-seconds: ${JWT_ACCESS_TOKEN_VALIDITY_SECONDS}
+  refresh-token-validity-seconds: ${JWT_REFRESH_TOKEN_VALIDITY_SECONDS}
+
+oauth:
+  kakao:
+    client-id: ${KAKAO_CLIENT_ID}
+    client-secret: ${KAKAO_CLIENT_SECRET}
+    redirect-uri: ${KAKAO_REDIRECT_URI}
+
+cors:
+  allowed-origins:
+    - http://localhost:8080
