@@ -1,9 +1,9 @@
 package io.chaekpool.auth.token.entity
 
+import java.time.Instant
 import org.springframework.data.annotation.Id
 import org.springframework.data.redis.core.RedisHash
 import org.springframework.data.redis.core.index.Indexed
-import java.time.Instant
 
 @RedisHash(value = "token:refresh", timeToLive = 604800) // 7일 = 604800초
 data class RefreshTokenEntity(
@@ -14,9 +14,6 @@ data class RefreshTokenEntity(
     val userId: Long,
 
     val token: String,
+    
     val issuedAt: Long = Instant.now().epochSecond,
-
-    val device: String? = null,
-    val ip: String? = null,
-    val userAgent: String? = null
 )
