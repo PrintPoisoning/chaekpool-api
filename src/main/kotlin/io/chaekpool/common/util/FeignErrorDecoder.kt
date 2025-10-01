@@ -15,7 +15,7 @@ class FeignErrorDecoder : ErrorDecoder {
             ?.use { String(it.readAllBytes(), StandardCharsets.UTF_8) }
             ?: "No response body"
 
-        log.error("[Feign-Error] methodKey={}, status={}, body={}", methodKey, response.status(), body)
+        log.error("[FEIGN_ERROR] methodKey={}, status={}, body={}", methodKey, response.status(), body)
 
         return when (response.status()) {
             400 -> IllegalArgumentException("잘못된 요청 (400)")

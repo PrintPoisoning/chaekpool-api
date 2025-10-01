@@ -19,7 +19,7 @@ class SingleLineFeignLogger : Logger() {
         val body = request.body()?.toString(Charsets.UTF_8)
 
         log.debug(
-            "[Feign-Request] method={} url={} headers=[{}] body={}",
+            "[FEIGN_REQUEST] method={} url={} headers=[{}] body={}",
             request.httpMethod(), request.url(), headers, body
         )
     }
@@ -34,7 +34,7 @@ class SingleLineFeignLogger : Logger() {
         val body = response.body()?.asInputStream()?.use { String(it.readAllBytes(), StandardCharsets.UTF_8) }
 
         log.debug(
-            "[Feign-Response] status={} elapsedTime={}ms headers=[{}] body={}",
+            "[FEIGN_RESPONSE] status={} elapsedTime={}ms headers=[{}] body={}",
             response.status(), elapsedTime, headers, body
         )
 
