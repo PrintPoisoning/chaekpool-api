@@ -17,7 +17,7 @@ class CorsConfig {
             allowedHeaders = listOf("*")
             allowCredentials = true
         }
-        
+
         return UrlBasedCorsConfigurationSource().apply {
             registerCorsConfiguration("/**", configuration)
         }

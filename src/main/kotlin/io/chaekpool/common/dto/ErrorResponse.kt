@@ -1,7 +1,7 @@
 package io.chaekpool.common.dto
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.LocalDateTime
+import com.fasterxml.jackson.annotation.JsonProperty
 
 data class ErrorResponse(
     @JsonProperty("status")

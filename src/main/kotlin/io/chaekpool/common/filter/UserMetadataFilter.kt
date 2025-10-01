@@ -20,7 +20,7 @@ class UserMetadataFilter(
     ) {
         try {
             context.set(extractor.extract(request))
-            
+
             filterChain.doFilter(request, response)
         } finally {
             context.clear()

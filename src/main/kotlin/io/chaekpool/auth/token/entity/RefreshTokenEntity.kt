@@ -14,6 +14,6 @@ data class RefreshTokenEntity(
     val userId: Long,
 
     val token: String,
-    
+
     val issuedAt: Long = Instant.now().epochSecond,
 )

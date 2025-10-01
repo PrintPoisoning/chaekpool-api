@@ -1,5 +1,7 @@
 package io.chaekpool.auth.token.service
 
+import java.time.Instant
+import java.util.Date
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.crypto.MACSigner
@@ -9,8 +11,6 @@ import com.nimbusds.jwt.SignedJWT
 import io.chaekpool.auth.token.config.JwtProperties
 import io.chaekpool.common.logger.LoggerDelegate
 import org.springframework.stereotype.Component
-import java.time.Instant
-import java.util.Date
 
 @Component
 class JwtProvider(
@@ -52,6 +52,7 @@ class JwtProvider(
             signedJWT.verify(verifier) && signedJWT.jwtClaimsSet.expirationTime.after(Date())
         } catch (e: Exception) {
             log.error("Token validation error", e)
+
             false
         }
 

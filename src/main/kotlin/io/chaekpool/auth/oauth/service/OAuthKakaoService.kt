@@ -33,10 +33,12 @@ class KakaoOAuthService(
         val kakaoUser: KakaoUserResponse = kakaoUserClient.getUserInfo("Bearer ${kakaoToken.accessToken}")
         val userId: Long = idGenerator.nextId()
 
+        // save kakaoUser to db
+
         val accessToken = jwtProvider.createAccessToken(userId)
         val refreshToken = jwtProvider.createRefreshToken(userId)
 
-        tokenManager.saveRefreshToken(userId, refreshToken)
+        tokenManager.issueRefreshToken(userId, refreshToken)
 
         return TokenResponse(accessToken, refreshToken)
     }

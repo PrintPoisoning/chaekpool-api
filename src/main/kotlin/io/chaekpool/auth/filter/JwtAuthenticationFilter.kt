@@ -3,6 +3,7 @@ package io.chaekpool.auth.filter
 import io.chaekpool.auth.token.service.BlacklistManager
 import io.chaekpool.auth.token.service.JwtProvider
 import io.chaekpool.common.logger.LoggerDelegate
+import io.chaekpool.common.util.isTrueOrForbidden
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -14,8 +15,8 @@ import org.springframework.web.filter.OncePerRequestFilter
 
 @Component
 class JwtAuthenticationFilter(
-    private val jwtProvider: JwtProvider,
-    private val blacklistManager: BlacklistManager
+    private val blacklistManager: BlacklistManager,
+    private val jwtProvider: JwtProvider
 ) : OncePerRequestFilter() {
 
     private val log by LoggerDelegate()
@@ -41,17 +42,14 @@ class JwtAuthenticationFilter(
     }
 
     private fun setAuthentication(request: HttpServletRequest, token: String) {
-        log.info("setAuthentication token={}", token)
-
         if (!jwtProvider.validateToken(token)) {
             return
         }
 
         val userId = jwtProvider.getUserId(token)
+        val isNotBlacklisted = !blacklistManager.isBlacklisted(userId, token)
 
-        if (blacklistManager.isBlacklisted(userId, token)) {
-            throw RuntimeException("Token is blacklisted")
-        }
+        isNotBlacklisted.isTrueOrForbidden("Access token is blacklisted")
 
         val authentication = UsernamePasswordAuthenticationToken(
             userId,

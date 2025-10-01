@@ -1,9 +1,9 @@
 package io.chaekpool.common.logger
 
+import java.nio.charset.StandardCharsets
 import feign.Logger
 import feign.Request
 import feign.Response
-import java.nio.charset.StandardCharsets
 
 class SingleLineFeignLogger : Logger() {
 
