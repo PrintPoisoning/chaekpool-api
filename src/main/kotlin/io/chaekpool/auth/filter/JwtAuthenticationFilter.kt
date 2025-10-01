@@ -1,6 +1,6 @@
 package io.chaekpool.auth.filter
 
-import io.chaekpool.common.util.LoggerDelegate
+import io.chaekpool.common.logger.LoggerDelegate
 import io.chaekpool.token.service.BlacklistManager
 import io.chaekpool.token.service.JwtProvider
 import jakarta.servlet.FilterChain
@@ -58,8 +58,6 @@ class JwtAuthenticationFilter(
             null,
             emptyList() // 권한 정보가 필요하다면 UserDetailsService 등과 연동
         )
-
-        log.info("Extracted userId={}", userId)
 
         authentication.details = WebAuthenticationDetailsSource().buildDetails(request)
 

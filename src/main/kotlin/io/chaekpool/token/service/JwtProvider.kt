@@ -6,7 +6,7 @@ import com.nimbusds.jose.crypto.MACSigner
 import com.nimbusds.jose.crypto.MACVerifier
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
-import io.chaekpool.common.util.LoggerDelegate
+import io.chaekpool.common.logger.LoggerDelegate
 import io.chaekpool.token.config.JwtProperties
 import org.springframework.stereotype.Component
 import java.time.Instant

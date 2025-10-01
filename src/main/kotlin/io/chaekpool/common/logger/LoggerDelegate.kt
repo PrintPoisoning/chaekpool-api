@@ -1,4 +1,4 @@
-package io.chaekpool.common.util
+package io.chaekpool.common.logger
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory

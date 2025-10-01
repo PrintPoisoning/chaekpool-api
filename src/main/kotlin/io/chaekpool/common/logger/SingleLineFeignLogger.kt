@@ -3,7 +3,6 @@ package io.chaekpool.common.logger
 import feign.Logger
 import feign.Request
 import feign.Response
-import io.chaekpool.common.util.LoggerDelegate
 import java.nio.charset.StandardCharsets
 
 class SingleLineFeignLogger : Logger() {

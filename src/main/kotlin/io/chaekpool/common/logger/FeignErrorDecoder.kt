@@ -1,4 +1,4 @@
-package io.chaekpool.common.util
+package io.chaekpool.common.logger
 
 import feign.FeignException
 import feign.Response
