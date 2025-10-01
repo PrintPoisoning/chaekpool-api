@@ -2,7 +2,7 @@ package io.chaekpool.common.config
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 
-@ConfigurationProperties(prefix = "snowflake")
+@ConfigurationProperties(prefix = "common.snowflake")
 data class SnowflakeProperties(
     val workerBits: Int = 5,
     val datacenterBits: Int = 5,
