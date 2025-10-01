@@ -1,4 +1,5 @@
 extra["spring-cloud-version"] = "2025.0.0"
+extra["ua-parser-version"] = "1.6.1"
 
 plugins {
     kotlin("jvm") version "2.1.20"
@@ -50,6 +51,9 @@ dependencies {
 
     // === Open Feign Client ===
     implementation("org.springframework.cloud:spring-cloud-starter-openfeign")
+
+    // === ua-parser ===
+    implementation("com.github.ua-parser:uap-java:${property("ua-parser-version")}")
 
     // === Testing ===
     testImplementation("org.springframework.boot:spring-boot-starter-test") {

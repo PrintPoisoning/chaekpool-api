@@ -1,31 +1,32 @@
 package io.chaekpool.auth.token.service
 
+import java.util.UUID
 import io.chaekpool.auth.token.entity.RefreshTokenEntity
 import io.chaekpool.auth.token.repository.RefreshTokenRepository
+import io.chaekpool.common.filter.UserMetadataContext
+import io.chaekpool.common.logger.LoggerDelegate
 import org.springframework.stereotype.Service
-import java.util.UUID
 
 @Service
 class TokenManager(
-    private val refreshTokenRepository: RefreshTokenRepository
+    private val refreshTokenRepository: RefreshTokenRepository,
+    private val userMetadataContext: UserMetadataContext
 ) {
 
-    fun saveRefreshToken(
-        userId: Long,
-        token: String,
-        device: String? = null,
-        ip: String? = null,
-        userAgent: String? = null
-    ): RefreshTokenEntity {
+    private val log by LoggerDelegate()
+
+    fun issueRefreshToken(userId: Long, token: String): RefreshTokenEntity {
         val key = "$userId:${UUID.randomUUID()}"
         val entity = RefreshTokenEntity(
             key = key,
             userId = userId,
             token = token,
-            device = device,
-            ip = ip,
-            userAgent = userAgent
         )
+
+        val metadata by userMetadataContext
+
+        // TODO: metadata db 추가 예정
+        log.debug("[TokenManager] metadata={}", metadata)
 
         return refreshTokenRepository.save(entity)
     }

@@ -1,6 +1,7 @@
 package io.chaekpool.common.config
 
 import io.chaekpool.auth.filter.JwtAuthenticationFilter
+import io.chaekpool.common.filter.UserMetadataFilter
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.config.Customizer
@@ -13,6 +14,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 class WebSecurityConfig(
+    private val userMetadataFilter: UserMetadataFilter,
     private val jwtAuthenticationFilter: JwtAuthenticationFilter,
     private val authorizationRules: Customizer<AuthRegistry>
 ) {
@@ -29,6 +31,7 @@ class WebSecurityConfig(
             logout { it.disable() }
             sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             authorizeHttpRequests(authorizationRules)
+            addFilterBefore(userMetadataFilter, UsernamePasswordAuthenticationFilter::class.java)
             addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
             build()
         }
