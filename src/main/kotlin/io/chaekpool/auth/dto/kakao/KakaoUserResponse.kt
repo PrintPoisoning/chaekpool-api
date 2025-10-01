@@ -8,8 +8,11 @@ data class KakaoUserResponse(
     val id: Long,
 
     @JsonProperty("connected_at")
-    val connectedAt: Date,
+    val connectedAt: Date?,
+
+    @JsonProperty("properties")
+    val properties: KakaoProperties?,
 
     @JsonProperty("kakao_account")
-    val kakaoAccount: KakaoAccount
+    val kakaoAccount: KakaoAccount?
 )
