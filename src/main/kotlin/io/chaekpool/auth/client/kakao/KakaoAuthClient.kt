@@ -13,7 +13,11 @@ import org.springframework.web.bind.annotation.RequestParam
 )
 interface KakaoAuthClient {
 
-    @PostMapping("/oauth/token")
+    @PostMapping(
+        value = ["/oauth/token"],
+        consumes = ["application/json"],
+        produces = ["application/json"]
+    )
     fun getAccessToken(
         @RequestParam("grant_type") grantType: String = "authorization_code",
         @RequestParam("client_id") clientId: String,
