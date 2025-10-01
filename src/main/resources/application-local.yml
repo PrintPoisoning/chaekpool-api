@@ -46,3 +46,9 @@ oauth:
 cors:
   allowed-origins:
     - http://localhost:8080
+
+snowflake:
+  worker-bits: 5
+  datacenter-bits: 5
+  sequence-bits: 12
+  epoch: 1735689600000 # 2025-01-01 UTC
