@@ -16,7 +16,7 @@ class AuthorizationRulesConfig {
         return Customizer { auth ->
             auth.requestMatchers("/api/v1/common/healthy")
                 .permitAll()
-                .requestMatchers("/api/v1/auth/**")
+                .requestMatchers("/api/v1/auth/refresh")
                 .permitAll()
                 .requestMatchers("/api/v1/oauth/**")
                 .permitAll()
