@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Configuration
 import java.time.Duration
 
 @Configuration
-@EnableFeignClients(basePackages = ["io.chaekpool.auth.client.kakao"])
+@EnableFeignClients(basePackages = ["io.chaekpool.auth.oauth.client.kakao"])
 class KakaoFeignConfig {
 
     @Bean
