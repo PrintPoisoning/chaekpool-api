@@ -27,7 +27,7 @@ class TokenManager(
         accessTokenRepository.deleteById(key)
 
     fun saveRefreshToken(
-        userId: String,
+        userId: Long,
         token: String,
         device: String? = null,
         ip: String? = null,
@@ -46,16 +46,19 @@ class TokenManager(
         return refreshTokenRepository.save(entity)
     }
 
-    fun getRefreshTokens(userId: String): List<RefreshTokenEntity> =
-        refreshTokenRepository.findByUserId(userId)
+    fun getRefreshTokens(userId: Long): List<RefreshTokenEntity> {
+        return refreshTokenRepository.findByUserId(userId)
+    }
 
-    fun deleteRefreshToken(key: String) =
+    fun deleteRefreshToken(key: String) {
         refreshTokenRepository.deleteById(key)
+    }
 
-    fun deleteAllRefreshTokens(userId: String) =
+    fun deleteAllRefreshTokens(userId: Long) {
         refreshTokenRepository.findByUserId(userId).forEach { refreshTokenRepository.deleteById(it.key) }
+    }
 
-    fun validateRefreshToken(userId: String, token: String): Boolean {
+    fun validateRefreshToken(userId: Long, token: String): Boolean {
         return refreshTokenRepository.findByUserId(userId).any { it.token == token }
     }
 }

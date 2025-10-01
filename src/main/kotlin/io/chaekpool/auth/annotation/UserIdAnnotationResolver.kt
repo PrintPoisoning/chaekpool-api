@@ -20,6 +20,6 @@ class UserIdAnnotationResolver : HandlerMethodArgumentResolver {
         webRequest: NativeWebRequest,
         binderFactory: WebDataBinderFactory?
     ): Any? {
-        return SecurityContextHolder.getContext().authentication?.principal as? String
+        return SecurityContextHolder.getContext().authentication?.principal as? Long
     }
 }

@@ -6,6 +6,7 @@ import io.chaekpool.auth.config.OAuthKakaoProperties
 import io.chaekpool.auth.dto.TokenResponse
 import io.chaekpool.auth.dto.kakao.KakaoTokenResponse
 import io.chaekpool.auth.dto.kakao.KakaoUserResponse
+import io.chaekpool.common.util.IdGenerator
 import io.chaekpool.token.service.JwtProvider
 import io.chaekpool.token.service.TokenManager
 import org.springframework.stereotype.Service
@@ -16,6 +17,7 @@ class KakaoOAuthService(
     private val kakaoUserClient: KakaoUserClient,
     private val tokenManager: TokenManager,
     private val jwtProvider: JwtProvider,
+    private val idGenerator: IdGenerator,
     private val props: OAuthKakaoProperties
 ) {
 
@@ -29,12 +31,11 @@ class KakaoOAuthService(
         )
 
         val kakaoUser: KakaoUserResponse = kakaoUserClient.getUserInfo("Bearer ${kakaoToken.accessToken}")
-        val userId = "kakao:${kakaoUser.id}"
+        val userId: Long = idGenerator.nextId()
 
         val accessToken = jwtProvider.createAccessToken(userId)
         val refreshToken = jwtProvider.createRefreshToken(userId)
 
-        tokenManager.saveAccessToken(userId, accessToken)
         tokenManager.saveRefreshToken(userId, refreshToken)
 
         return TokenResponse(accessToken, refreshToken)

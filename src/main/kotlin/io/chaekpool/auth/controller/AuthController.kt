@@ -17,7 +17,7 @@ class AuthController(
 
     @DeleteMapping("/tokens")
     fun logout(
-        @UserId userId: String,
+        @UserId userId: Long,
         @AccessToken accessToken: String,
         @RefreshToken refreshToken: String
     ): ResponseEntity<Unit> {

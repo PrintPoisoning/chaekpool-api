@@ -10,7 +10,7 @@ class BlacklistManager(
     private val jwtProvider: JwtProvider,
 ) {
 
-    fun blacklistToken(userId: String, token: String) {
+    fun blacklistToken(userId: Long, token: String) {
         val expiresIn = jwtProvider.getExpirationTime(token)
 
         if (expiresIn > 0) {
@@ -21,7 +21,7 @@ class BlacklistManager(
         }
     }
 
-    fun isBlacklisted(userId: String, token: String): Boolean {
+    fun isBlacklisted(userId: Long, token: String): Boolean {
         return blacklistRepository.existsById("$userId:$token")
     }
 }

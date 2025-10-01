@@ -20,16 +20,16 @@ class JwtProvider(
     private val log by LoggerDelegate()
     private val secretKey: ByteArray = props.secret.toByteArray()
 
-    fun createAccessToken(userId: String): String = createToken(userId, props.accessTokenValiditySeconds)
+    fun createAccessToken(userId: Long): String = createToken(userId.toString(), props.accessTokenValiditySeconds)
 
-    fun createRefreshToken(userId: String): String = createToken(userId, props.refreshTokenValiditySeconds)
+    fun createRefreshToken(userId: Long): String = createToken(userId.toString(), props.refreshTokenValiditySeconds)
 
-    private fun createToken(userId: String, validitySeconds: Long): String {
+    private fun createToken(subject: String, validitySeconds: Long): String {
         val now = Instant.now()
         val exp = now.plusSeconds(validitySeconds)
 
         val claims = JWTClaimsSet.Builder()
-            .subject(userId)
+            .subject(subject)
             .issueTime(Date.from(now))
             .expirationTime(Date.from(exp))
             .build()
@@ -55,10 +55,10 @@ class JwtProvider(
             false
         }
 
-    fun getUserId(token: String): String {
+    fun getUserId(token: String): Long {
         val signedJWT = SignedJWT.parse(token)
 
-        return signedJWT.jwtClaimsSet.subject
+        return signedJWT.jwtClaimsSet.subject.toLong()
     }
 
     fun getExpirationTime(token: String): Long {
