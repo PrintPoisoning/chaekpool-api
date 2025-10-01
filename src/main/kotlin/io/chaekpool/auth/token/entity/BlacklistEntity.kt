@@ -1,4 +1,4 @@
-package io.chaekpool.token.entity
+package io.chaekpool.auth.token.entity
 
 import org.springframework.data.annotation.Id
 import org.springframework.data.redis.core.RedisHash
@@ -8,7 +8,7 @@ import org.springframework.data.redis.core.TimeToLive
 data class BlacklistEntity(
     @Id
     val key: String,
-    
+
     val token: String,
 
     @TimeToLive

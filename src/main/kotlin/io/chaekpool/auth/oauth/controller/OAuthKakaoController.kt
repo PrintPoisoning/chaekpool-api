@@ -1,8 +1,8 @@
-package io.chaekpool.auth.controller
+package io.chaekpool.auth.oauth.controller
 
 import io.chaekpool.auth.dto.TokenResponse
-import io.chaekpool.auth.service.KakaoOAuthService
-import io.chaekpool.token.config.JwtProperties
+import io.chaekpool.auth.oauth.service.KakaoOAuthService
+import io.chaekpool.auth.token.config.JwtProperties
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.http.ResponseCookie
 import org.springframework.http.ResponseEntity
@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@RequestMapping("/api/v1/oauth/kakao")
+@RequestMapping("/api/v1/auth/oauth/kakao")
 class OAuthKakaoController(
     private val kakaoOAuthService: KakaoOAuthService,
     private val jwtProperties: JwtProperties

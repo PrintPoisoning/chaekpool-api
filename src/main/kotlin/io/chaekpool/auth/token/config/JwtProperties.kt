@@ -1,4 +1,4 @@
-package io.chaekpool.token.config
+package io.chaekpool.auth.token.config
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 

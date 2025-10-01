@@ -1,7 +1,7 @@
-package io.chaekpool.token.service
+package io.chaekpool.auth.token.service
 
-import io.chaekpool.token.entity.BlacklistEntity
-import io.chaekpool.token.repository.BlacklistRepository
+import io.chaekpool.auth.token.entity.BlacklistEntity
+import io.chaekpool.auth.token.repository.BlacklistRepository
 import org.springframework.stereotype.Service
 
 @Service

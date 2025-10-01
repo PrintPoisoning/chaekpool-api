@@ -1,4 +1,4 @@
-package io.chaekpool.auth.dto.kakao
+package io.chaekpool.auth.oauth.dto.kakao
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import java.util.Date

@@ -3,7 +3,7 @@ package io.chaekpool.auth.controller
 import io.chaekpool.auth.annotation.AccessToken
 import io.chaekpool.auth.annotation.RefreshToken
 import io.chaekpool.auth.annotation.UserId
-import io.chaekpool.token.service.BlacklistManager
+import io.chaekpool.auth.token.service.BlacklistManager
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.RequestMapping

@@ -1,7 +1,7 @@
-package io.chaekpool.auth.client.kakao
+package io.chaekpool.auth.oauth.client.kakao
 
-import io.chaekpool.auth.config.KakaoFeignConfig
-import io.chaekpool.auth.dto.kakao.KakaoTokenResponse
+import io.chaekpool.auth.oauth.config.KakaoFeignConfig
+import io.chaekpool.auth.oauth.dto.kakao.KakaoTokenResponse
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestParam

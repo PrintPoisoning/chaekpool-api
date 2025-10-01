@@ -1,6 +1,6 @@
-package io.chaekpool.token.repository
+package io.chaekpool.auth.token.repository
 
-import io.chaekpool.token.entity.RefreshTokenEntity
+import io.chaekpool.auth.token.entity.RefreshTokenEntity
 import org.springframework.data.repository.CrudRepository
 import org.springframework.stereotype.Repository
 

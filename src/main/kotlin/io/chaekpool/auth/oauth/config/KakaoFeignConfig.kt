@@ -1,4 +1,4 @@
-package io.chaekpool.auth.config
+package io.chaekpool.auth.oauth.config
 
 import feign.Logger
 import feign.Request

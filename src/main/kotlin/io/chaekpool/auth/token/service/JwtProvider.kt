@@ -1,4 +1,4 @@
-package io.chaekpool.token.service
+package io.chaekpool.auth.token.service
 
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.JWSHeader
@@ -6,8 +6,8 @@ import com.nimbusds.jose.crypto.MACSigner
 import com.nimbusds.jose.crypto.MACVerifier
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
+import io.chaekpool.auth.token.config.JwtProperties
 import io.chaekpool.common.logger.LoggerDelegate
-import io.chaekpool.token.config.JwtProperties
 import org.springframework.stereotype.Component
 import java.time.Instant
 import java.util.Date

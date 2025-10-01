@@ -1,7 +1,7 @@
-package io.chaekpool.token.service
+package io.chaekpool.auth.token.service
 
-import io.chaekpool.token.entity.RefreshTokenEntity
-import io.chaekpool.token.repository.RefreshTokenRepository
+import io.chaekpool.auth.token.entity.RefreshTokenEntity
+import io.chaekpool.auth.token.repository.RefreshTokenRepository
 import org.springframework.stereotype.Service
 import java.util.UUID
 

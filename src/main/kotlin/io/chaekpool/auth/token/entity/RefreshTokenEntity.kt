@@ -1,4 +1,4 @@
-package io.chaekpool.token.entity
+package io.chaekpool.auth.token.entity
 
 import org.springframework.data.annotation.Id
 import org.springframework.data.redis.core.RedisHash

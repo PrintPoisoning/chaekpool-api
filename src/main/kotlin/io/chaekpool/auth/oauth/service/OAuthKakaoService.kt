@@ -1,14 +1,14 @@
-package io.chaekpool.auth.service
+package io.chaekpool.auth.oauth.service
 
-import io.chaekpool.auth.client.kakao.KakaoAuthClient
-import io.chaekpool.auth.client.kakao.KakaoUserClient
-import io.chaekpool.auth.config.OAuthKakaoProperties
 import io.chaekpool.auth.dto.TokenResponse
-import io.chaekpool.auth.dto.kakao.KakaoTokenResponse
-import io.chaekpool.auth.dto.kakao.KakaoUserResponse
+import io.chaekpool.auth.oauth.client.kakao.KakaoAuthClient
+import io.chaekpool.auth.oauth.client.kakao.KakaoUserClient
+import io.chaekpool.auth.oauth.config.OAuthKakaoProperties
+import io.chaekpool.auth.oauth.dto.kakao.KakaoTokenResponse
+import io.chaekpool.auth.oauth.dto.kakao.KakaoUserResponse
+import io.chaekpool.auth.token.service.JwtProvider
+import io.chaekpool.auth.token.service.TokenManager
 import io.chaekpool.common.util.IdGenerator
-import io.chaekpool.token.service.JwtProvider
-import io.chaekpool.token.service.TokenManager
 import org.springframework.stereotype.Service
 
 @Service
