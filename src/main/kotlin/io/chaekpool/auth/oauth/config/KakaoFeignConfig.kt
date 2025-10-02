@@ -4,7 +4,7 @@ import java.time.Duration
 import feign.Logger
 import feign.Request
 import feign.codec.ErrorDecoder
-import io.chaekpool.common.logger.FeignErrorDecoder
+import io.chaekpool.common.handler.FeignErrorDecoder
 import io.chaekpool.common.logger.SingleLineFeignLogger
 import org.springframework.cloud.openfeign.EnableFeignClients
 import org.springframework.context.annotation.Bean

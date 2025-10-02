@@ -1,4 +1,4 @@
-package io.chaekpool.common.logger
+package io.chaekpool.common.handler
 
 import java.nio.charset.StandardCharsets
 import feign.Response
@@ -9,6 +9,7 @@ import io.chaekpool.common.exception.external.ExternalForbiddenException
 import io.chaekpool.common.exception.external.ExternalServerErrorException
 import io.chaekpool.common.exception.external.ExternalSystem
 import io.chaekpool.common.exception.external.ExternalUnauthorizedException
+import io.chaekpool.common.logger.LoggerDelegate
 import org.springframework.http.HttpStatus
 
 class FeignErrorDecoder : ErrorDecoder {

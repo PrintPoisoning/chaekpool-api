@@ -1,4 +1,4 @@
-package io.chaekpool.common.aop
+package io.chaekpool.common.handler
 
 import io.chaekpool.common.dto.ErrorResponse
 import io.chaekpool.common.exception.ServiceException
