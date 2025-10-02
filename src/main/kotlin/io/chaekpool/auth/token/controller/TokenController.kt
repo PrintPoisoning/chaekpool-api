@@ -23,7 +23,7 @@ class TokenController(
     private val cookieProvider: CookieProvider
 ) {
 
-    @DeleteMapping("/")
+    @DeleteMapping
     fun logout(
         @AccessUserId userId: Long,
         @AccessToken accessToken: String,
