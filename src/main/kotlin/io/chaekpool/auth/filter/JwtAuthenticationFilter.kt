@@ -3,7 +3,6 @@ package io.chaekpool.auth.filter
 import io.chaekpool.auth.token.service.BlacklistManager
 import io.chaekpool.auth.token.service.JwtProvider
 import io.chaekpool.common.logger.LoggerDelegate
-import io.chaekpool.common.util.isTrueOrForbidden
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -47,9 +46,8 @@ class JwtAuthenticationFilter(
         }
 
         val userId = jwtProvider.getUserId(token)
-        val isNotBlacklisted = !blacklistManager.isBlacklisted(userId, token)
 
-        isNotBlacklisted.isTrueOrForbidden("Access token is blacklisted")
+        blacklistManager.assertToken(userId, token)
 
         val authentication = UsernamePasswordAuthenticationToken(
             userId,

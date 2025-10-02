@@ -1,7 +1,9 @@
 package io.chaekpool.auth.token.service
 
 import io.chaekpool.auth.token.entity.BlacklistEntity
+import io.chaekpool.auth.token.exception.TokenBlacklistedException
 import io.chaekpool.auth.token.repository.BlacklistRepository
+import io.chaekpool.common.util.isTrueOrThrow
 import org.springframework.stereotype.Service
 
 @Service
@@ -21,7 +23,9 @@ class BlacklistManager(
         }
     }
 
-    fun isBlacklisted(userId: Long, token: String): Boolean {
-        return blacklistRepository.existsById("$userId:$token")
+    fun assertToken(userId: Long, token: String) {
+        val isNotBlacklisted = !blacklistRepository.existsById("$userId:$token")
+
+        isNotBlacklisted.isTrueOrThrow { TokenBlacklistedException() }
     }
 }
