@@ -2,6 +2,7 @@ package io.chaekpool.common.handler
 
 import io.chaekpool.common.dto.ErrorResponse
 import io.chaekpool.common.exception.ServiceException
+import io.chaekpool.common.logger.LoggerDelegate
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -9,11 +10,14 @@ import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.servlet.resource.NoResourceFoundException
 
 @RestControllerAdvice
 class GlobalExceptionHandler(
     private val request: HttpServletRequest
 ) {
+
+    private val log by LoggerDelegate()
 
     @ExceptionHandler(ServiceException::class)
     fun handleServiceException(e: ServiceException): ResponseEntity<ErrorResponse> {
@@ -41,6 +45,19 @@ class GlobalExceptionHandler(
 
         return ResponseEntity.badRequest()
             .body(body)
+    }
+
+    @ExceptionHandler(NoResourceFoundException::class)
+    fun handleNotFound(e: NoResourceFoundException): ResponseEntity<ErrorResponse> {
+        val body = ErrorResponse(
+            status = HttpStatus.NOT_FOUND.value(),
+            error = HttpStatus.NOT_FOUND.name,
+            message = "리소스를 찾을 수 없습니다.",
+            errorCode = "NOT_FOUND",
+            path = request.requestURI
+        )
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body)
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException::class)
