@@ -1,4 +1,4 @@
-package io.chaekpool.auth.filter
+package io.chaekpool.auth.token.filter
 
 import io.chaekpool.auth.exception.ErrorCodeAccessDeniedException
 import io.chaekpool.auth.exception.ErrorCodeBadCredentialsException

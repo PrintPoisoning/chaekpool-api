@@ -1,6 +1,6 @@
 package io.chaekpool.common.config
 
-import io.chaekpool.auth.filter.JwtAuthenticationFilter
+import io.chaekpool.auth.token.filter.JwtAuthenticationFilter
 import io.chaekpool.common.filter.UserMetadataFilter
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
