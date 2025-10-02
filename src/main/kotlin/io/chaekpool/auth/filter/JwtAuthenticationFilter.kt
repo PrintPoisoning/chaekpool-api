@@ -1,7 +1,11 @@
 package io.chaekpool.auth.filter
 
+import io.chaekpool.auth.exception.ErrorCodeAccessDeniedException
+import io.chaekpool.auth.exception.ErrorCodeBadCredentialsException
 import io.chaekpool.auth.token.service.BlacklistManager
 import io.chaekpool.auth.token.service.JwtProvider
+import io.chaekpool.common.exception.internal.ForbiddenException
+import io.chaekpool.common.exception.internal.UnauthorizedException
 import io.chaekpool.common.logger.LoggerDelegate
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
@@ -41,22 +45,24 @@ class JwtAuthenticationFilter(
     }
 
     private fun setAuthentication(request: HttpServletRequest, token: String) {
-        if (!jwtProvider.validateToken(token)) {
-            return
+        try {
+            jwtProvider.assertToken(token)
+
+            val userId = jwtProvider.getUserId(token)
+
+            blacklistManager.assertToken(userId, token)
+
+            val authentication = UsernamePasswordAuthenticationToken(
+                userId,
+                null,
+                emptyList()
+            )
+            authentication.details = WebAuthenticationDetailsSource().buildDetails(request)
+            SecurityContextHolder.getContext().authentication = authentication
+        } catch (e: UnauthorizedException) {
+            throw ErrorCodeBadCredentialsException(e, request)
+        } catch (e: ForbiddenException) {
+            throw ErrorCodeAccessDeniedException(e, request)
         }
-
-        val userId = jwtProvider.getUserId(token)
-
-        blacklistManager.assertToken(userId, token)
-
-        val authentication = UsernamePasswordAuthenticationToken(
-            userId,
-            null,
-            emptyList() // 권한 정보가 필요하다면 UserDetailsService 등과 연동
-        )
-
-        authentication.details = WebAuthenticationDetailsSource().buildDetails(request)
-
-        SecurityContextHolder.getContext().authentication = authentication
     }
 }

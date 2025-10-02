@@ -3,7 +3,6 @@ package io.chaekpool.auth.token.service
 import java.util.UUID
 import io.chaekpool.auth.token.dto.TokenPair
 import io.chaekpool.auth.token.entity.RefreshTokenEntity
-import io.chaekpool.auth.token.exception.InvalidTokenException
 import io.chaekpool.auth.token.exception.TokenNotFoundException
 import io.chaekpool.auth.token.repository.RefreshTokenRepository
 import io.chaekpool.common.filter.UserMetadataContext
@@ -44,11 +43,8 @@ class TokenManager(
     }
 
     fun assertRefreshToken(userId: Long, refreshToken: String) {
-        val isValid = jwtProvider.validateToken(refreshToken)
-        val isExist = existsByUserIdAndToken(userId, refreshToken)
-
-        isValid.isTrueOrThrow { InvalidTokenException() }
-        isExist.isTrueOrThrow { TokenNotFoundException() }
+        jwtProvider.assertToken(refreshToken)
+        existsByUserIdAndToken(userId, refreshToken).isTrueOrThrow { TokenNotFoundException() }
     }
 
     fun findByUserIdAndToken(userId: Long, token: String): RefreshTokenEntity? {

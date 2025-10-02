@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.security.config.Customizer
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
+import org.springframework.security.config.annotation.web.configurers.ExceptionHandlingConfigurer
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
@@ -16,7 +17,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 class WebSecurityConfig(
     private val userMetadataFilter: UserMetadataFilter,
     private val jwtAuthenticationFilter: JwtAuthenticationFilter,
-    private val authorizationRules: Customizer<AuthRegistry>
+    private val authorizationRules: Customizer<AuthRegistry>,
+    private val exceptionRules: Customizer<ExceptionHandlingConfigurer<HttpSecurity>>
 ) {
 
     @Bean
@@ -30,6 +32,7 @@ class WebSecurityConfig(
             rememberMe { it.disable() }
             logout { it.disable() }
             sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
+            exceptionHandling(exceptionRules)
             authorizeHttpRequests(authorizationRules)
             addFilterBefore(userMetadataFilter, UsernamePasswordAuthenticationFilter::class.java)
             addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)

@@ -1,8 +1,8 @@
 package io.chaekpool.auth.token.exception
 
-import io.chaekpool.common.exception.internal.UnauthorizedException
+import io.chaekpool.common.exception.internal.ForbiddenException
 
 class TokenBlacklistedException(
-    message: String = "비활성화된 토큰입니다.",
+    message: String = "JWT token blacklisted",
     errorCode: String = "TOKEN_BLACKLISTED",
-) : UnauthorizedException(message, errorCode)
+) : ForbiddenException(message, errorCode)
