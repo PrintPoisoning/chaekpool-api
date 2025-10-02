@@ -1,41 +1,37 @@
 package io.chaekpool.auth.token.service
 
-import io.chaekpool.auth.dto.TokenResponse
-import io.chaekpool.common.util.isTrueOrForbidden
+import io.chaekpool.auth.token.dto.TokenPair
+import io.chaekpool.auth.token.repository.RefreshTokenRepository
 import org.springframework.stereotype.Service
 
 @Service
 class TokenService(
     private val blacklistManager: BlacklistManager,
     private val tokenManager: TokenManager,
-    private val jwtProvider: JwtProvider
+    private val refreshTokenRepository: RefreshTokenRepository,
 ) {
 
-    fun validateToken(userId: Long, token: String): Boolean {
-        return jwtProvider.validateToken(token) && !blacklistManager.isBlacklisted(userId, token)
+    fun refresh(userId: Long, accessToken: String?, refreshToken: String): TokenPair {
+        assertRefreshToken(userId, refreshToken)
+        deactivateToken(userId, accessToken, refreshToken)
+
+        val tokenPair = tokenManager.createTokenPair(userId)
+
+        tokenManager.issueRefreshToken(userId, tokenPair.refreshToken)
+
+        return tokenPair
     }
 
-    fun refresh(userId: Long, accessToken: String, refreshToken: String): TokenResponse {
-        validateToken(userId, refreshToken).isTrueOrForbidden("Invalid refresh token")
-
-        deactivate(userId, accessToken, refreshToken)
-
-        val newAccessToken = jwtProvider.createAccessToken(userId)
-        val newRefreshToken = jwtProvider.createRefreshToken(userId)
-
-        tokenManager.issueRefreshToken(userId, newRefreshToken)
-
-        return TokenResponse(
-            accessToken = newAccessToken,
-            refreshToken = newRefreshToken,
-        )
+    fun assertRefreshToken(userId: Long, refreshToken: String) {
+        tokenManager.assertRefreshToken(userId, refreshToken) // device id 추가 논의 필요 (header, metadata etc.)
+        blacklistManager.assertToken(userId, refreshToken)
     }
 
-    fun deactivate(userId: Long, accessToken: String, refreshToken: String) {
-        blacklistManager.blacklistToken(userId, accessToken)
+
+    fun deactivateToken(userId: Long, accessToken: String?, refreshToken: String) {
+        accessToken?.let { blacklistManager.blacklistToken(userId, accessToken) }
         blacklistManager.blacklistToken(userId, refreshToken)
 
-        // device id 추가 예정
-//        tokenManager.deleteAllRefreshTokens(userId)
+        tokenManager.deleteByUserIdAndToken(userId, refreshToken) // device id 추가 논의 필요 (header, metadata etc.)
     }
 }

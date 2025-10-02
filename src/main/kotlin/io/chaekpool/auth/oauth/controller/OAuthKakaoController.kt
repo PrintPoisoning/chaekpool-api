@@ -2,6 +2,7 @@ package io.chaekpool.auth.oauth.controller
 
 import io.chaekpool.auth.dto.TokenResponse
 import io.chaekpool.auth.oauth.service.KakaoOAuthService
+import io.chaekpool.auth.token.dto.TokenPair
 import io.chaekpool.auth.token.service.CookieProvider
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.http.HttpHeaders.SET_COOKIE
@@ -23,11 +24,11 @@ class OAuthKakaoController(
         @RequestParam code: String,
         response: HttpServletResponse
     ): ResponseEntity<TokenResponse> {
-        val tokenResponse: TokenResponse = kakaoOAuthService.authenticateWithKakao(code)
-        val cookie = cookieProvider.refreshTokenCookie(tokenResponse.refreshToken)
+        val tokenPair: TokenPair = kakaoOAuthService.authenticateWithKakao(code)
+        val cookie = cookieProvider.refreshTokenCookie(tokenPair.refreshToken)
 
         response.addHeader(SET_COOKIE, cookie.toString())
 
-        return ResponseEntity.ok(tokenResponse)
+        return ResponseEntity.ok(TokenResponse(tokenPair))
     }
 }
