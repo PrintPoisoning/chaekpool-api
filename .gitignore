@@ -281,8 +281,23 @@ gradle-app.setting
 # Java heap dump
 *.hprof
 
+### Environment Files ###
+.env
+.env.local
+.env.*.local
+!.env.example
+
+### Logs ###
+logs/
+
 ### Docker ###
-docker/data
+docker/data/
+
+### Monitoring Data ###
+# Prometheus, Loki, Grafana 데이터는 제외
+prometheus-data/
+loki-data/
+grafana-data/
 
 
 # End of https://www.toptal.com/developers/gitignore/api/windows,macos,linux,vim,maven,gradle,java,kotlin,git,intellij+all
