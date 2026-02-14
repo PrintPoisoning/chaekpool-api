@@ -1,0 +1,16 @@
+{
+  "properties": [
+    {
+      "name": "app.environment",
+      "type": "java.lang.String",
+      "description": "Logical environment name for logging labels (Loki, structured logs)",
+      "defaultValue": "local"
+    },
+    {
+      "name": "loki.url",
+      "type": "java.lang.String",
+      "description": "Grafana Loki push API endpoint for Loki4j logback appender",
+      "defaultValue": "http://localhost:3100/loki/api/v1/push"
+    }
+  ]
+}

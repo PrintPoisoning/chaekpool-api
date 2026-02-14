@@ -1,15 +1,23 @@
+app:
+  environment: local
+
 server:
   address:
   port: ${SERVER_PORT:8080}
 
 logging:
+  file:
+    path: ./logs
   level:
     root: INFO
-    org.springframework.security: DEBUG
     io.chaekpool.auth: DEBUG
     io.chaekpool.common.logger: DEBUG
+  pattern:
+    level: "%5p [${spring.application.name:chaekpool-api},%X{traceId:-},%X{spanId:-}]"
 
 spring:
+  application:
+    name: chaekpool-api
   datasource:
     url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
     username: ${POSTGRES_USER}
@@ -40,7 +48,7 @@ common:
     worker-bits: 5
     datacenter-bits: 5
     sequence-bits: 12
-    epoch: 1735689600000 # 2025-01-01 UTC
+    epoch: 1735689600000
 
 auth:
   jwt:
@@ -60,3 +68,40 @@ auth:
       client-id: ${KAKAO_CLIENT_ID}
       client-secret: ${KAKAO_CLIENT_SECRET}
       redirect-uri: ${KAKAO_REDIRECT_URI}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+    prometheus:
+      enabled: true
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+    tags:
+      application: ${spring.application.name:chaekpool-api}
+      environment: local
+  tracing:
+    sampling:
+      probability: 1.0
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: http://localhost:4318/v1/traces
+  otlp:
+    metrics:
+      export:
+        enabled: false
+  prometheus:
+    metrics:
+      export:
+        enabled: true
