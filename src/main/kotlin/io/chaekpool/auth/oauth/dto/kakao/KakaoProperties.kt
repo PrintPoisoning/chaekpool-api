@@ -3,12 +3,12 @@ package io.chaekpool.auth.oauth.dto.kakao
 import com.fasterxml.jackson.annotation.JsonProperty
 
 data class KakaoProperties(
-    @JsonProperty("nickname")
+    @param:JsonProperty("nickname")
     val nickname: String,
 
-    @JsonProperty("profile_image")
+    @param:JsonProperty("profile_image")
     val profileImage: String,
 
-    @JsonProperty("thumbnail_image")
+    @param:JsonProperty("thumbnail_image")
     val thumbnailImage: String,
 )

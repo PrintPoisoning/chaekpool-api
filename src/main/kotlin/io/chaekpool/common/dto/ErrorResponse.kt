@@ -1,24 +1,24 @@
 package io.chaekpool.common.dto
 
-import java.time.LocalDateTime
 import com.fasterxml.jackson.annotation.JsonProperty
+import java.time.LocalDateTime
 
 data class ErrorResponse(
-    @JsonProperty("status")
+    @param:JsonProperty("status")
     val status: Int,
 
-    @JsonProperty("error")
+    @param:JsonProperty("error")
     val error: String,
 
-    @JsonProperty("message")
+    @param:JsonProperty("message")
     val message: String?,
 
-    @JsonProperty("error_code")
+    @param:JsonProperty("error_code")
     val errorCode: String,
 
-    @JsonProperty("path")
+    @param:JsonProperty("path")
     val path: String,
 
-    @JsonProperty("timestamp")
+    @param:JsonProperty("timestamp")
     val timestamp: String = LocalDateTime.now().toString()
 )

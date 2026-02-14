@@ -1,18 +1,18 @@
 package io.chaekpool.auth.oauth.dto.kakao
 
-import java.util.Date
 import com.fasterxml.jackson.annotation.JsonProperty
+import java.util.*
 
 data class KakaoUserResponse(
-    @JsonProperty("id")
+    @param:JsonProperty("id")
     val id: Long,
 
-    @JsonProperty("connected_at")
+    @param:JsonProperty("connected_at")
     val connectedAt: Date?,
 
-    @JsonProperty("properties")
+    @param:JsonProperty("properties")
     val properties: KakaoProperties?,
 
-    @JsonProperty("kakao_account")
+    @param:JsonProperty("kakao_account")
     val kakaoAccount: KakaoAccount?
 )
