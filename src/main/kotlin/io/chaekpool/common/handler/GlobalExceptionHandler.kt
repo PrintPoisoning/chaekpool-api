@@ -2,7 +2,7 @@ package io.chaekpool.common.handler
 
 import io.chaekpool.common.dto.ErrorResponse
 import io.chaekpool.common.exception.ServiceException
-import io.chaekpool.common.logger.LoggerDelegate
+import io.github.oshai.kotlinlogging.KotlinLogging
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -17,10 +17,12 @@ class GlobalExceptionHandler(
     private val request: HttpServletRequest
 ) {
 
-    private val log by LoggerDelegate()
+    private val logger = KotlinLogging.logger {}
 
     @ExceptionHandler(ServiceException::class)
     fun handleServiceException(e: ServiceException): ResponseEntity<ErrorResponse> {
+        logger.warn { "ServiceException: ${e.errorCode} - ${e.message}" }
+
         val body = ErrorResponse(
             status = e.httpStatus.value(),
             error = e.httpStatus.name,
@@ -35,10 +37,13 @@ class GlobalExceptionHandler(
 
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidationException(e: MethodArgumentNotValidException): ResponseEntity<ErrorResponse> {
+        val message = e.bindingResult.fieldErrors.joinToString { "${it.field}=${it.defaultMessage}" }
+        logger.warn { "Validation error: $message" }
+
         val body = ErrorResponse(
             status = HttpStatus.BAD_REQUEST.value(),
             error = HttpStatus.BAD_REQUEST.name,
-            message = e.bindingResult.fieldErrors.joinToString { "${it.field}=${it.defaultMessage}" },
+            message = message,
             errorCode = "VALIDATION_ERROR",
             path = request.requestURI
         )
@@ -76,6 +81,8 @@ class GlobalExceptionHandler(
 
     @ExceptionHandler(Exception::class)
     fun handleGenericException(e: Exception): ResponseEntity<ErrorResponse> {
+        logger.error(e) { "Unhandled exception: ${e.message}" }
+
         val body = ErrorResponse(
             status = HttpStatus.INTERNAL_SERVER_ERROR.value(),
             error = HttpStatus.INTERNAL_SERVER_ERROR.name,
