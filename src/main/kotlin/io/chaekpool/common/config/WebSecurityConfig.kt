@@ -17,7 +17,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 class WebSecurityConfig(
     private val userMetadataFilter: UserMetadataFilter,
     private val jwtAuthenticationFilter: JwtAuthenticationFilter,
-    private val authorizationRules: Customizer<AuthRegistry>,
+    private val authorizationRulesConfig: AuthorizationRulesConfig,
     private val exceptionRules: Customizer<ExceptionHandlingConfigurer<HttpSecurity>>
 ) {
 
@@ -33,7 +33,7 @@ class WebSecurityConfig(
             logout { it.disable() }
             sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             exceptionHandling(exceptionRules)
-            authorizeHttpRequests(authorizationRules)
+            authorizeHttpRequests { auth -> authorizationRulesConfig.configure(auth) }
             addFilterBefore(userMetadataFilter, UsernamePasswordAuthenticationFilter::class.java)
             addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
             build()
