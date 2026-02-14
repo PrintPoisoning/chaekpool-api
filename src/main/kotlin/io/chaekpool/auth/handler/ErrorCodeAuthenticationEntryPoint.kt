@@ -1,6 +1,5 @@
 package io.chaekpool.auth.handler
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import io.chaekpool.common.dto.ErrorResponse
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -9,10 +8,11 @@ import org.springframework.http.MediaType
 import org.springframework.security.core.AuthenticationException
 import org.springframework.security.web.AuthenticationEntryPoint
 import org.springframework.stereotype.Component
+import tools.jackson.databind.json.JsonMapper
 
 @Component
 class ErrorCodeAuthenticationEntryPoint(
-    private val objectMapper: ObjectMapper
+    private val jsonMapper: JsonMapper
 ) : AuthenticationEntryPoint {
 
     override fun commence(
@@ -34,6 +34,6 @@ class ErrorCodeAuthenticationEntryPoint(
 
         response.status = status.value()
         response.contentType = MediaType.APPLICATION_JSON_VALUE
-        response.writer.write(objectMapper.writeValueAsString(body))
+        response.writer.write(jsonMapper.writeValueAsString(body))
     }
 }

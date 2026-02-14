@@ -6,7 +6,7 @@ import org.springframework.security.authentication.BadCredentialsException
 
 class ErrorCodeBadCredentialsException(
     message: String,
-    cause: Throwable? = null
+    cause: Throwable
 ) : BadCredentialsException(message, cause) {
     constructor(e: ServiceException, request: HttpServletRequest) : this(e.message, e) {
         request.setAttribute("_errorCode", e.errorCode)
