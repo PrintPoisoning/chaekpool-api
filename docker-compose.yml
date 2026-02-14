@@ -1,31 +1,135 @@
 services:
+  # ================================
+  # Infrastructure
+  # ================================
   postgres:
-    image: postgres:16
-    container_name: local_postgres
-    restart: always
+    image: postgres:18.2
+    container_name: chaekpool-postgres
+    env_file: .env.local
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      - "${POSTGRES_PORT}:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - ./docker/data/postgres:/var/lib/postgresql/data
+      - ./docker/data/postgres:/var/lib/postgresql
     networks:
-      - backend
+      - infra
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  redis:
-    image: redis:7.2
-    container_name: local_redis
-    restart: always
+  valkey:
+    image: valkey/valkey:9.0.2
+    container_name: chaekpool-valkey
+    command: valkey-server --requirepass ${REDIS_PASSWORD}
+    env_file: .env.local
     ports:
-      - "${REDIS_PORT}:6379"
-    command: [ "redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD}" ]
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
-      - ./docker/data/redis:/data
+      - ./docker/data/valkey:/data
     networks:
-      - backend
+      - infra
+    healthcheck:
+      test: ["CMD", "valkey-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ================================
+  # Monitoring
+  # ================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: chaekpool-prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-lifecycle"
+      - "--enable-feature=exemplar-storage"
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./docker/monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./docker/data/prometheus:/prometheus
+    networks:
+      - monitoring
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  loki:
+    image: grafana/loki:3.4.2
+    container_name: chaekpool-loki
+    ports:
+      - "${LOKI_PORT:-3100}:3100"
+    volumes:
+      - ./docker/monitoring/loki/loki-config.yml:/etc/loki/local-config.yaml:ro
+      - ./docker/data/loki:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3100/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  jaeger:
+    image: jaegertracing/jaeger:2.15.0
+    container_name: chaekpool-jaeger
+    environment:
+      JAEGER_LOG_LEVEL: ${JAEGER_LOG_LEVEL:-info}
+    ports:
+      - "${JAEGER_UI_PORT:-16686}:16686"       # Jaeger UI
+      - "${JAEGER_OTLP_HTTP_PORT:-4318}:4318"   # OTLP HTTP
+      - "${JAEGER_OTLP_GRPC_PORT:-4317}:4317"   # OTLP gRPC
+    volumes:
+      - ./docker/data/jaeger:/badger
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:16686"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: chaekpool-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_LOG_LEVEL: ${GRAFANA_LOG_LEVEL:-info}
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - ./docker/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./docker/data/grafana:/var/lib/grafana
+    networks:
+      - monitoring
+    depends_on:
+      prometheus:
+        condition: service_healthy
+      loki:
+        condition: service_healthy
+      jaeger:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 networks:
-  backend:
+  infra:
+    driver: bridge
+  monitoring:
     driver: bridge
