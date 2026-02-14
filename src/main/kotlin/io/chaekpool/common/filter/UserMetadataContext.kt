@@ -1,8 +1,8 @@
 package io.chaekpool.common.filter
 
-import kotlin.reflect.KProperty
 import io.chaekpool.common.dto.UserMetadata
 import org.springframework.stereotype.Component
+import kotlin.reflect.KProperty
 
 @Component
 class UserMetadataContext {

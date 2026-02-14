@@ -1,10 +1,10 @@
 package io.chaekpool.common.config
 
-import java.net.InetAddress
 import io.chaekpool.common.util.SnowflakeIdGenerator
 import io.chaekpool.common.util.SnowflakeSpec
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import java.net.InetAddress
 
 @Configuration
 class SnowflakeConfig(
