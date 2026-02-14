@@ -1,8 +1,5 @@
 package io.chaekpool.auth.token.service
 
-import java.text.ParseException
-import java.time.Instant
-import java.util.Date
 import com.nimbusds.jose.JOSEException
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.JWSHeader
@@ -15,15 +12,19 @@ import io.chaekpool.auth.token.exception.InvalidTokenException
 import io.chaekpool.auth.token.exception.MissingClaimException
 import io.chaekpool.auth.token.exception.TokenExpiredException
 import io.chaekpool.common.exception.ServiceException
-import io.chaekpool.common.logger.LoggerDelegate
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Component
+import java.text.ParseException
+import java.time.Instant
+import java.util.*
 
 @Component
 class JwtProvider(
     private val props: JwtProperties
 ) {
 
-    private val log by LoggerDelegate()
+    private val log = KotlinLogging.logger {}
+
     private val secretKey: ByteArray = props.secret.toByteArray()
 
     fun createAccessToken(userId: Long): String = createToken(userId.toString(), props.accessTokenValiditySeconds)
@@ -55,7 +56,7 @@ class JwtProvider(
             assertToken(token)
             true
         } catch (e: Exception) {
-            log.error("JWT validation error", e)
+            log.error(e) { "JWT validation error" }
             false
         }
     }

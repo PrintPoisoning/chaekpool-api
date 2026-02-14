@@ -1,20 +1,16 @@
 package io.chaekpool.common.handler
 
-import java.nio.charset.StandardCharsets
 import feign.Response
 import feign.codec.ErrorDecoder
 import io.chaekpool.common.exception.ExternalServiceException
-import io.chaekpool.common.exception.external.ExternalBadRequestException
-import io.chaekpool.common.exception.external.ExternalForbiddenException
-import io.chaekpool.common.exception.external.ExternalServerErrorException
-import io.chaekpool.common.exception.external.ExternalSystem
-import io.chaekpool.common.exception.external.ExternalUnauthorizedException
-import io.chaekpool.common.logger.LoggerDelegate
+import io.chaekpool.common.exception.external.*
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.http.HttpStatus
+import java.nio.charset.StandardCharsets
 
 class FeignErrorDecoder : ErrorDecoder {
 
-    private val log by LoggerDelegate()
+    private val log = KotlinLogging.logger {}
 
     override fun decode(methodKey: String?, response: Response): RuntimeException {
         val body = response.body()
@@ -22,7 +18,7 @@ class FeignErrorDecoder : ErrorDecoder {
             ?.use { String(it.readAllBytes(), StandardCharsets.UTF_8) }
             ?: "No response body"
 
-        log.error("[FEIGN_ERROR] methodKey={}, status={}, body={}", methodKey, response.status(), body)
+        log.error { "[FEIGN_ERROR] methodKey=$methodKey, status=${response.status()}, body=$body" }
 
         return when (response.status()) {
             400 -> ExternalBadRequestException(ExternalSystem.UNKNOWN_API)

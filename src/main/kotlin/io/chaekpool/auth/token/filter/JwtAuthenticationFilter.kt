@@ -6,7 +6,6 @@ import io.chaekpool.auth.token.service.BlacklistManager
 import io.chaekpool.auth.token.service.JwtProvider
 import io.chaekpool.common.exception.internal.ForbiddenException
 import io.chaekpool.common.exception.internal.UnauthorizedException
-import io.chaekpool.common.logger.LoggerDelegate
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -21,8 +20,6 @@ class JwtAuthenticationFilter(
     private val blacklistManager: BlacklistManager,
     private val jwtProvider: JwtProvider
 ) : OncePerRequestFilter() {
-
-    private val log by LoggerDelegate()
 
     override fun doFilterInternal(
         request: HttpServletRequest,

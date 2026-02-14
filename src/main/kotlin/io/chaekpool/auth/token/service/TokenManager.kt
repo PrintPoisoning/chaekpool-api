@@ -1,14 +1,14 @@
 package io.chaekpool.auth.token.service
 
-import java.util.UUID
 import io.chaekpool.auth.token.dto.TokenPair
 import io.chaekpool.auth.token.entity.RefreshTokenEntity
 import io.chaekpool.auth.token.exception.TokenNotFoundException
 import io.chaekpool.auth.token.repository.RefreshTokenRepository
 import io.chaekpool.common.filter.UserMetadataContext
-import io.chaekpool.common.logger.LoggerDelegate
 import io.chaekpool.common.util.isTrueOrThrow
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
+import java.util.*
 
 @Service
 class TokenManager(
@@ -17,7 +17,7 @@ class TokenManager(
     private val jwtProvider: JwtProvider
 ) {
 
-    private val log by LoggerDelegate()
+    private val log = KotlinLogging.logger {}
 
     fun createTokenPair(userId: Long): TokenPair {
         return TokenPair(
@@ -37,7 +37,7 @@ class TokenManager(
         val metadata by userMetadataContext
 
         // TODO: metadata db 추가 예정
-        log.debug("[TokenManager] metadata={}", metadata)
+        log.debug { "[TokenManager] metadata=$metadata" }
 
         return refreshTokenRepository.save(entity)
     }
