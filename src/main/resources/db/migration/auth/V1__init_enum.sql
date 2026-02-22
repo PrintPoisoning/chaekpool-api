@@ -1,3 +1,0 @@
-CREATE TYPE visibility_type AS ENUM ('PUBLIC', 'PRIVATE', 'FRIENDS');
-
-CREATE TYPE user_status_type AS ENUM ('ACTIVE', 'DORMANT', 'DELETED');

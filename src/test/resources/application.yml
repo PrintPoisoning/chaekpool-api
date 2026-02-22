@@ -1,0 +1,56 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/cp
+    username: cptest
+    password: cptest
+    driver-class-name: org.postgresql.Driver
+
+  flyway:
+    enabled: true
+    clean-disabled: false
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: ""
+
+jooq:
+  sql-dialect: POSTGRES
+
+logging:
+  level:
+    root: INFO
+    io.chaekpool: DEBUG
+    org.jooq: DEBUG
+    org.springframework.jdbc: DEBUG
+    org.flywaydb: DEBUG
+
+common:
+  cors:
+    allowed-origins: http://localhost:3000
+
+  snowflake:
+    worker-bits: 5
+    datacenter-bits: 5
+    sequence-bits: 12
+    epoch: 1735689600000
+
+auth:
+  jwt:
+    secret: test-jwt-secret-key-for-integration-tests-only-minimum-32-chars
+    access-token-validity-seconds: 900
+    refresh-token-validity-seconds: 604800
+
+  cookie:
+    http-only: true
+    secure: false
+    same-site: Lax
+    path: /api/v1
+    max-age: 604800
+
+  oauth:
+    kakao:
+      client-id: test-kakao-client-id
+      client-secret: test-kakao-client-secret
+      redirect-uri: http://localhost:8080/api/v1/auth/oauth/kakao/callback
