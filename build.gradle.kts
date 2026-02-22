@@ -1,22 +1,18 @@
 import org.jooq.meta.jaxb.Logging
 
-val flywayVersion = "12.0.1"
-val javaUuidGeneratorVersion = "5.2.0"
-val jooqVersion = "3.20.11"
 val kotlinLoggingJvmVersion = "7.0.3"
 val lokiLogbackAppenderVersion = "2.0.3"
 val springCloudVersion = "2025.1.1"
-val testcontainersVersion = "1.21.3"
 val uaJavaVersion = "1.6.1"
 
 buildscript {
     dependencies {
-        classpath("org.flywaydb:flyway-core:12.0.1")
-        classpath("org.flywaydb:flyway-database-postgresql:12.0.1")
-        classpath("org.jooq:jooq-codegen:3.20.11")
+        classpath("org.flywaydb:flyway-core:11.14.1")
+        classpath("org.flywaydb:flyway-database-postgresql:11.14.1")
+        classpath("org.jooq:jooq-codegen:3.19.29")
         classpath("org.postgresql:postgresql:42.7.4")
-        classpath("org.testcontainers:testcontainers:1.21.3")
-        classpath("org.testcontainers:postgresql:1.21.3")
+        classpath("org.testcontainers:testcontainers:2.0.3")
+        classpath("org.testcontainers:testcontainers-postgresql:2.0.3")
     }
 }
 
@@ -60,24 +56,21 @@ dependencies {
     // === Open Feign Client ===
     implementation("org.springframework.cloud:spring-cloud-starter-openfeign")
 
-    // === UUID ===
-    implementation("com.fasterxml.uuid:java-uuid-generator:$javaUuidGeneratorVersion")
-
     // === ua-parser ===
     implementation("com.github.ua-parser:uap-java:$uaJavaVersion")
 
     // === Database ===
     implementation("org.springframework.boot:spring-boot-starter-jooq")
-    implementation("org.jooq:jooq:$jooqVersion")
-    implementation("org.jooq:jooq-kotlin:$jooqVersion")
+    implementation("org.jooq:jooq")
+    implementation("org.jooq:jooq-kotlin")
     implementation("org.postgresql:postgresql")
 
     // === Redis ===
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
 
     // === Flyway ===
-    implementation("org.flywaydb:flyway-core:$flywayVersion")
-    implementation("org.flywaydb:flyway-database-postgresql:$flywayVersion")
+    implementation("org.springframework.boot:spring-boot-starter-flyway")
+    implementation("org.flywaydb:flyway-database-postgresql")
 
     // === Observability / Monitoring ===
     implementation("org.springframework.boot:spring-boot-starter-actuator")
@@ -92,9 +85,9 @@ dependencies {
     }
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
-    testImplementation("org.testcontainers:testcontainers:$testcontainersVersion")
-    testImplementation("org.testcontainers:postgresql:$testcontainersVersion")
-    testImplementation("org.testcontainers:junit-jupiter:$testcontainersVersion")
+    testImplementation("org.testcontainers:testcontainers")
+    testImplementation("org.testcontainers:testcontainers-postgresql")
+    testImplementation("org.testcontainers:testcontainers-junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
