@@ -300,7 +300,6 @@ logs/
 docker/data/
 
 ### Monitoring Data ###
-# Prometheus, Loki, Grafana 데이터는 제외
 prometheus-data/
 loki-data/
 grafana-data/
