@@ -281,11 +281,17 @@ gradle-app.setting
 # Java heap dump
 *.hprof
 
+### JOOQ Generated Code ###
+build/generated-src/jooq/
+src/generated/jooq/
+
+### Gradle Properties ###
+gradle.properties
+
 ### Environment Files ###
 .env
 .env.local
 .env.*.local
-!.env.example
 
 ### Logs ###
 logs/
