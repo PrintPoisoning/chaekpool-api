@@ -15,7 +15,6 @@ class AuthorizationRulesConfig {
                 "/api/v1/common/healthy",
                 "/api/v1/auth/oauth/**",
                 "/api/v1/auth/token/refresh",
-                "/api/v1/monitoring/**",
                 "/actuator/**",
                 "/robots.txt"
             ).permitAll()
