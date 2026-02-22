@@ -1,6 +1,7 @@
 import org.jooq.meta.jaxb.Logging
 
 val flywayVersion = "12.0.1"
+val javaUuidGeneratorVersion = "5.2.0"
 val jooqVersion = "3.20.11"
 val kotlinLoggingJvmVersion = "7.0.3"
 val lokiLogbackAppenderVersion = "2.0.3"
@@ -58,6 +59,9 @@ dependencies {
 
     // === Open Feign Client ===
     implementation("org.springframework.cloud:spring-cloud-starter-openfeign")
+
+    // === UUID ===
+    implementation("com.fasterxml.uuid:java-uuid-generator:$javaUuidGeneratorVersion")
 
     // === ua-parser ===
     implementation("com.github.ua-parser:uap-java:$uaJavaVersion")
