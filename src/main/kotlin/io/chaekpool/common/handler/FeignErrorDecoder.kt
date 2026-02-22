@@ -3,7 +3,11 @@ package io.chaekpool.common.handler
 import feign.Response
 import feign.codec.ErrorDecoder
 import io.chaekpool.common.exception.ExternalServiceException
-import io.chaekpool.common.exception.external.*
+import io.chaekpool.common.exception.external.ExternalBadRequestException
+import io.chaekpool.common.exception.external.ExternalForbiddenException
+import io.chaekpool.common.exception.external.ExternalServerErrorException
+import io.chaekpool.common.exception.external.ExternalSystem
+import io.chaekpool.common.exception.external.ExternalUnauthorizedException
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.http.HttpStatus
 import java.nio.charset.StandardCharsets
