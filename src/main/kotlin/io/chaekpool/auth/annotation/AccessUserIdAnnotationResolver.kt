@@ -7,6 +7,7 @@ import org.springframework.web.bind.support.WebDataBinderFactory
 import org.springframework.web.context.request.NativeWebRequest
 import org.springframework.web.method.support.HandlerMethodArgumentResolver
 import org.springframework.web.method.support.ModelAndViewContainer
+import java.util.UUID
 
 @Component
 class AccessUserIdAnnotationResolver : HandlerMethodArgumentResolver {
@@ -20,6 +21,6 @@ class AccessUserIdAnnotationResolver : HandlerMethodArgumentResolver {
         webRequest: NativeWebRequest,
         binderFactory: WebDataBinderFactory?
     ): Any? {
-        return SecurityContextHolder.getContext().authentication?.principal as? Long
+        return SecurityContextHolder.getContext().authentication?.principal as? UUID
     }
 }

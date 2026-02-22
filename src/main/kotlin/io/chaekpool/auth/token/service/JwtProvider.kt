@@ -16,7 +16,8 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Component
 import java.text.ParseException
 import java.time.Instant
-import java.util.*
+import java.util.Date
+import java.util.UUID
 
 @Component
 class JwtProvider(
@@ -27,9 +28,9 @@ class JwtProvider(
 
     private val secretKey: ByteArray = props.secret.toByteArray()
 
-    fun createAccessToken(userId: Long): String = createToken(userId.toString(), props.accessTokenValiditySeconds)
+    fun createAccessToken(userId: UUID): String = createToken(userId.toString(), props.accessTokenValiditySeconds)
 
-    fun createRefreshToken(userId: Long): String = createToken(userId.toString(), props.refreshTokenValiditySeconds)
+    fun createRefreshToken(userId: UUID): String = createToken(userId.toString(), props.refreshTokenValiditySeconds)
 
     private fun createToken(subject: String, validitySeconds: Long): String {
         val now = Instant.now()
@@ -91,10 +92,10 @@ class JwtProvider(
         }
     }
 
-    fun getUserId(token: String): Long {
+    fun getUserId(token: String): UUID {
         val signedJWT = SignedJWT.parse(token)
 
-        return signedJWT.jwtClaimsSet.subject.toLong()
+        return UUID.fromString(signedJWT.jwtClaimsSet.subject)
     }
 
     fun getExpirationTime(token: String): Long {

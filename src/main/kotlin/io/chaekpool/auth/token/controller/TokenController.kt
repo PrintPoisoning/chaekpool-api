@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import java.util.UUID
 
 @RestController
 @RequestMapping("/api/v1/auth/token")
@@ -27,7 +28,7 @@ class TokenController(
 
     @DeleteMapping
     fun logout(
-        @AccessUserId userId: Long,
+        @AccessUserId userId: UUID,
         @AccessToken accessToken: String,
         @RefreshToken refreshToken: String
     ): ResponseEntity<Unit> {
@@ -39,7 +40,7 @@ class TokenController(
 
     @PostMapping("/refresh")
     fun refresh(
-        @RefreshUserId userId: Long,
+        @RefreshUserId userId: UUID,
         @AccessToken accessToken: String?,
         @RefreshToken refreshToken: String,
         response: HttpServletResponse

@@ -4,6 +4,7 @@ import org.springframework.data.annotation.Id
 import org.springframework.data.redis.core.RedisHash
 import org.springframework.data.redis.core.index.Indexed
 import java.time.Instant
+import java.util.UUID
 
 @RedisHash(value = "token:refresh", timeToLive = 604800) // 7일 = 604800초
 data class RefreshTokenEntity(
@@ -11,7 +12,7 @@ data class RefreshTokenEntity(
     val key: String,
 
     @Indexed
-    val userId: Long,
+    val userId: UUID,
 
     val token: String,
 

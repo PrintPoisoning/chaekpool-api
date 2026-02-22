@@ -8,7 +8,7 @@ import io.chaekpool.common.filter.UserMetadataContext
 import io.chaekpool.common.util.isTrueOrThrow
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
-import java.util.*
+import java.util.UUID
 
 @Service
 class TokenManager(
@@ -19,14 +19,14 @@ class TokenManager(
 
     private val log = KotlinLogging.logger {}
 
-    fun createTokenPair(userId: Long): TokenPair {
+    fun createTokenPair(userId: UUID): TokenPair {
         return TokenPair(
             accessToken = jwtProvider.createAccessToken(userId),
             refreshToken = jwtProvider.createRefreshToken(userId)
         )
     }
 
-    fun issueRefreshToken(userId: Long, token: String): RefreshTokenEntity {
+    fun issueRefreshToken(userId: UUID, token: String): RefreshTokenEntity {
         val key = "$userId:${UUID.randomUUID()}"
         val entity = RefreshTokenEntity(
             key = key,
@@ -42,21 +42,21 @@ class TokenManager(
         return refreshTokenRepository.save(entity)
     }
 
-    fun assertRefreshToken(userId: Long, refreshToken: String) {
+    fun assertRefreshToken(userId: UUID, refreshToken: String) {
         jwtProvider.assertToken(refreshToken)
         existsByUserIdAndToken(userId, refreshToken).isTrueOrThrow { TokenNotFoundException() }
     }
 
-    fun findByUserIdAndToken(userId: Long, token: String): RefreshTokenEntity? {
+    fun findByUserIdAndToken(userId: UUID, token: String): RefreshTokenEntity? {
         return refreshTokenRepository.findByUserId(userId)
             .firstOrNull { it.token == token }
     }
 
-    fun existsByUserIdAndToken(userId: Long, token: String): Boolean {
+    fun existsByUserIdAndToken(userId: UUID, token: String): Boolean {
         return findByUserIdAndToken(userId, token) != null
     }
 
-    fun deleteByUserIdAndToken(userId: Long, token: String) {
+    fun deleteByUserIdAndToken(userId: UUID, token: String) {
         findByUserIdAndToken(userId, token)?.let { refreshTokenRepository.delete(it) }
     }
 }
