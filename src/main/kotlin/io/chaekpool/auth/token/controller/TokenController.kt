@@ -32,7 +32,7 @@ class TokenController(
         @AccessToken accessToken: String,
         @RefreshToken refreshToken: String
     ): ResponseEntity<Unit> {
-        tokenService.deactivateToken(userId, accessToken, refreshToken)
+        tokenService.deactivate(userId, accessToken, refreshToken)
 
         return ResponseEntity.noContent()
             .build()

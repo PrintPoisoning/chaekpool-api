@@ -14,7 +14,7 @@ class TokenService(
 
     fun refresh(userId: UUID, accessToken: String?, refreshToken: String): TokenPair {
         assertRefreshToken(userId, refreshToken)
-        deactivateToken(userId, accessToken, refreshToken)
+        deactivate(userId, accessToken, refreshToken)
 
         val tokenPair = tokenManager.createTokenPair(userId)
 
@@ -29,7 +29,7 @@ class TokenService(
     }
 
 
-    fun deactivateToken(userId: UUID, accessToken: String?, refreshToken: String) {
+    fun deactivate(userId: UUID, accessToken: String?, refreshToken: String) {
         accessToken?.let { blacklistManager.blacklistToken(userId, accessToken) }
         blacklistManager.blacklistToken(userId, refreshToken)
 
