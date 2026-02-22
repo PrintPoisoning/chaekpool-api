@@ -4,6 +4,7 @@ import io.chaekpool.auth.dto.TokenResponse
 import io.chaekpool.auth.oauth.service.KakaoOAuthService
 import io.chaekpool.auth.token.dto.TokenPair
 import io.chaekpool.auth.token.service.CookieProvider
+import io.micrometer.observation.annotation.Observed
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.http.HttpHeaders.SET_COOKIE
 import org.springframework.http.ResponseEntity
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/v1/auth/oauth/kakao")
+@Observed(name = "auth.oauth.kakao")
 class OAuthKakaoController(
     private val kakaoOAuthService: KakaoOAuthService,
     private val cookieProvider: CookieProvider

@@ -8,6 +8,7 @@ import io.chaekpool.auth.dto.TokenResponse
 import io.chaekpool.auth.token.dto.TokenPair
 import io.chaekpool.auth.token.service.CookieProvider
 import io.chaekpool.auth.token.service.TokenService
+import io.micrometer.observation.annotation.Observed
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.http.HttpHeaders.SET_COOKIE
 import org.springframework.http.ResponseEntity
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/v1/auth/token")
+@Observed(name = "auth.token")
 class TokenController(
     private val tokenService: TokenService,
     private val cookieProvider: CookieProvider
