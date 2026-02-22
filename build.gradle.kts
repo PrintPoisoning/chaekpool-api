@@ -10,9 +10,12 @@ val uaJavaVersion = "1.6.1"
 
 buildscript {
     dependencies {
+        classpath("org.flywaydb:flyway-core:12.0.1")
         classpath("org.flywaydb:flyway-database-postgresql:12.0.1")
         classpath("org.jooq:jooq-codegen:3.20.11")
         classpath("org.postgresql:postgresql:42.7.4")
+        classpath("org.testcontainers:testcontainers:1.21.3")
+        classpath("org.testcontainers:postgresql:1.21.3")
     }
 }
 
@@ -155,52 +158,59 @@ tasks.register<Delete>("jooqClean") {
 
 tasks.register("jooqGenerate") {
     group = "jooq"
-    description = "Generate jOOQ code from database schema"
-
-    dependsOn("flywayMigrate")
+    description = "Generate jOOQ code from database schema using Testcontainers"
 
     doLast {
-        val postgresUrl = System.getenv("POSTGRES_URL") ?: "jdbc:postgresql://localhost:5432/cp"
-        val postgresUser = System.getenv("POSTGRES_USER") ?: "admin"
-        val postgresPassword = System.getenv("POSTGRES_PASSWORD") ?: "admin"
+        val postgres = org.testcontainers.containers.PostgreSQLContainer<Nothing>("postgres:18.2-alpine3.23")
+        postgres.start()
 
-        org.jooq.codegen.GenerationTool.generate(
-            org.jooq.meta.jaxb.Configuration()
-                .withLogging(Logging.INFO)
-                .withJdbc(
-                    org.jooq.meta.jaxb.Jdbc()
-                        .withDriver("org.postgresql.Driver")
-                        .withUrl(postgresUrl)
-                        .withUser(postgresUser)
-                        .withPassword(postgresPassword)
-                )
-                .withGenerator(
-                    org.jooq.meta.jaxb.Generator()
-                        .withName("org.jooq.codegen.KotlinGenerator")
-                        .withDatabase(
-                            org.jooq.meta.jaxb.Database()
-                                .withName("org.jooq.meta.postgres.PostgresDatabase")
-                                .withInputSchema("public")
-                                .withIncludes(".*")
-                                .withExcludes("flyway_schema_history")
-                        )
-                        .withGenerate(
-                            org.jooq.meta.jaxb.Generate()
-                                .withDeprecated(false)
-                                .withRecords(true)
-                                .withImmutablePojos(true)
-                                .withFluentSetters(true)
-                                .withJavaTimeTypes(true)
-                                .withKotlinNotNullPojoAttributes(true)
-                                .withKotlinNotNullRecordAttributes(true)
-                        )
-                        .withTarget(
-                            org.jooq.meta.jaxb.Target()
-                                .withPackageName("io.chaekpool.generated.jooq")
-                                .withDirectory(jooqOutputDir.get().toString())
-                                .withClean(true)
-                        )
-                )
-        )
+        try {
+            org.flywaydb.core.Flyway.configure()
+                .dataSource(postgres.jdbcUrl, postgres.username, postgres.password)
+                .locations("filesystem:src/main/resources/db/migration")
+                .load()
+                .migrate()
+
+            org.jooq.codegen.GenerationTool.generate(
+                org.jooq.meta.jaxb.Configuration()
+                    .withLogging(Logging.INFO)
+                    .withJdbc(
+                        org.jooq.meta.jaxb.Jdbc()
+                            .withDriver("org.postgresql.Driver")
+                            .withUrl(postgres.jdbcUrl)
+                            .withUser(postgres.username)
+                            .withPassword(postgres.password)
+                    )
+                    .withGenerator(
+                        org.jooq.meta.jaxb.Generator()
+                            .withName("org.jooq.codegen.KotlinGenerator")
+                            .withDatabase(
+                                org.jooq.meta.jaxb.Database()
+                                    .withName("org.jooq.meta.postgres.PostgresDatabase")
+                                    .withInputSchema("public")
+                                    .withIncludes(".*")
+                                    .withExcludes("flyway_schema_history")
+                            )
+                            .withGenerate(
+                                org.jooq.meta.jaxb.Generate()
+                                    .withDeprecated(false)
+                                    .withRecords(true)
+                                    .withImmutablePojos(true)
+                                    .withFluentSetters(true)
+                                    .withJavaTimeTypes(true)
+                                    .withKotlinNotNullPojoAttributes(true)
+                                    .withKotlinNotNullRecordAttributes(true)
+                            )
+                            .withTarget(
+                                org.jooq.meta.jaxb.Target()
+                                    .withPackageName("io.chaekpool.generated.jooq")
+                                    .withDirectory(jooqOutputDir.get().toString())
+                                    .withClean(true)
+                            )
+                    )
+            )
+        } finally {
+            postgres.stop()
+        }
     }
 }
