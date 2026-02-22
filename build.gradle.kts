@@ -24,7 +24,6 @@ plugins {
     kotlin("plugin.spring") version "2.3.10"
     id("org.springframework.boot") version "4.0.2"
     id("io.spring.dependency-management") version "1.1.7"
-    id("org.flywaydb.flyway") version "12.0.1"
 }
 
 group = "io.chaekpool"
@@ -120,23 +119,6 @@ tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
 }
 
 // =============================================================================
-// Flyway Configuration
-// =============================================================================
-
-flyway {
-    url = System.getenv("POSTGRES_URL") ?: "jdbc:postgresql://localhost:5432/cp"
-    user = System.getenv("POSTGRES_USER") ?: "admin"
-    password = System.getenv("POSTGRES_PASSWORD") ?: "admin"
-    locations = arrayOf("classpath:db/migration")
-    baselineOnMigrate = true
-    validateOnMigrate = true
-}
-
-tasks.withType<org.flywaydb.gradle.task.AbstractFlywayTask>().configureEach {
-    notCompatibleWithConfigurationCache("Flyway plugin does not support configuration cache")
-}
-
-// =============================================================================
 // jOOQ Configuration
 // =============================================================================
 
@@ -159,6 +141,9 @@ tasks.register<Delete>("jooqClean") {
 tasks.register("jooqGenerate") {
     group = "jooq"
     description = "Generate jOOQ code from database schema using Testcontainers"
+
+    inputs.files(fileTree("src/main/resources/db/migration") { include("**/*.sql") })
+    outputs.dir(jooqOutputDir)
 
     doLast {
         val postgres = org.testcontainers.containers.PostgreSQLContainer<Nothing>("postgres:18.2-alpine3.23")
