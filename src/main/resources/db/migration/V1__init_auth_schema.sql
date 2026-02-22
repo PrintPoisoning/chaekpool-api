@@ -17,7 +17,7 @@ CREATE TABLE users
 
 CREATE TABLE auth_providers
 (
-    id            SERIAL PRIMARY KEY,
+    id            UUID PRIMARY KEY DEFAULT uuidv7(),
     description   VARCHAR(255),
     provider_name VARCHAR(50) UNIQUE NOT NULL
 );
@@ -26,7 +26,7 @@ CREATE TABLE user_auth_accounts
 (
     id               UUID PRIMARY KEY DEFAULT uuidv7(),
     access_token     TEXT,
-    provider_id      INT          NOT NULL,
+    provider_id      UUID         NOT NULL,
     provider_user_id VARCHAR(255) NOT NULL,
     refresh_token    TEXT,
     token_expiry     TIMESTAMP,
@@ -38,17 +38,6 @@ CREATE TABLE user_auth_accounts
     UNIQUE (provider_id, provider_user_id)
 );
 
-CREATE TABLE roles
-(
-    id        SERIAL PRIMARY KEY,
-    role_name VARCHAR(50) UNIQUE NOT NULL
-);
-
-CREATE TABLE user_roles
-(
-    role_id INT  NOT NULL,
-    user_id UUID NOT NULL,
-    PRIMARY KEY (user_id, role_id),
-    CONSTRAINT fk_user_roles_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
-    CONSTRAINT fk_user_roles_role FOREIGN KEY (role_id) REFERENCES roles (id) ON DELETE CASCADE
-);
+INSERT INTO auth_providers (provider_name, description)
+VALUES ('KAKAO', '카카오 소셜 로그인')
+ON CONFLICT (provider_name) DO NOTHING;
