@@ -4,6 +4,10 @@ val kotlinLoggingJvmVersion = "7.0.3"
 val lokiLogbackAppenderVersion = "2.0.3"
 val springCloudVersion = "2025.1.1"
 val uaJavaVersion = "1.6.1"
+val kotestVersion = "6.1.0"
+val mockkVersion = "1.14.9"
+val springmockkVersion = "5.0.1"
+val restdocsApiSpecVersion = "0.19.4"
 
 buildscript {
     dependencies {
@@ -21,6 +25,7 @@ plugins {
     kotlin("plugin.spring") version "2.3.10"
     id("org.springframework.boot") version "4.0.2"
     id("io.spring.dependency-management") version "1.1.7"
+    id("com.epages.restdocs-api-spec") version "0.19.4"
 }
 
 group = "io.chaekpool"
@@ -89,6 +94,20 @@ dependencies {
     testImplementation("org.testcontainers:testcontainers-postgresql")
     testImplementation("org.testcontainers:testcontainers-junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    // Kotest BDD Framework
+    testImplementation("io.kotest:kotest-runner-junit5:$kotestVersion")
+    testImplementation("io.kotest:kotest-assertions-core:$kotestVersion")
+    testImplementation("io.kotest:kotest-framework-engine:$kotestVersion")
+    testImplementation("io.kotest.extensions:kotest-extensions-spring:1.3.0")
+
+    // MockK (Kotlin용 Mocking)
+    testImplementation("io.mockk:mockk:$mockkVersion")
+    testImplementation("com.ninja-squad:springmockk:$springmockkVersion")
+
+    // REST Docs + OpenAPI 통합
+    testImplementation("com.epages:restdocs-api-spec:$restdocsApiSpecVersion")
+    testImplementation("com.epages:restdocs-api-spec-mockmvc:$restdocsApiSpecVersion")
 }
 
 dependencyManagement {
@@ -143,7 +162,7 @@ tasks.register("jooqGenerate") {
     outputs.dir(jooqOutputDir)
 
     doLast {
-        val postgres = org.testcontainers.containers.PostgreSQLContainer<Nothing>("postgres:18.2-alpine3.23")
+        val postgres = org.testcontainers.postgresql.PostgreSQLContainer("postgres:18.2-alpine3.23")
         postgres.start()
 
         try {
