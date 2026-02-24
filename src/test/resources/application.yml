@@ -1,22 +1,7 @@
 spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5432/cp
-    username: cptest
-    password: cptest
-    driver-class-name: org.postgresql.Driver
-
   flyway:
     enabled: true
     clean-disabled: false
-
-  data:
-    redis:
-      host: localhost
-      port: 6379
-      password: ""
-
-jooq:
-  sql-dialect: POSTGRES
 
 logging:
   level:
@@ -29,12 +14,6 @@ logging:
 common:
   cors:
     allowed-origins: http://localhost:3000
-
-  snowflake:
-    worker-bits: 5
-    datacenter-bits: 5
-    sequence-bits: 12
-    epoch: 1735689600000
 
 auth:
   jwt:
