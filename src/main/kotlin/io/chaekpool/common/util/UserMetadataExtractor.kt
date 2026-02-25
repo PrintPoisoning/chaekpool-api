@@ -2,6 +2,7 @@ package io.chaekpool.common.util
 
 import io.chaekpool.common.dto.UserMetadata
 import jakarta.servlet.http.HttpServletRequest
+import org.springframework.http.HttpHeaders.USER_AGENT
 import org.springframework.stereotype.Component
 import ua_parser.Parser
 
@@ -12,7 +13,7 @@ class UserMetadataExtractor {
 
     fun extract(request: HttpServletRequest): UserMetadata {
         val ip = resolveClientIp(request)
-        val uaString = request.getHeader("User-Agent") ?: "UNKNOWN"
+        val uaString = request.getHeader(USER_AGENT) ?: "UNKNOWN"
 
         val client = parser.parse(uaString)
 
