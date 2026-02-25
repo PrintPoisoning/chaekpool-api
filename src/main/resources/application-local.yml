@@ -2,23 +2,22 @@ app:
   environment: local
 
 server:
-  address:
   port: ${SERVER_PORT:8080}
 
 spring:
   datasource:
-    url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
-    username: ${POSTGRES_USER}
-    password: ${POSTGRES_PASSWORD}
     hikari:
       maximum-pool-size: 10
       minimum-idle: 2
+      pool-name: cp-api-local
 
   data:
     redis:
-      host: ${REDIS_HOST}
-      port: ${REDIS_PORT}
-      password: ${REDIS_PASSWORD}
+      lettuce:
+        pool:
+          max-active: 10
+          max-idle: 5
+          min-idle: 2
 
   cloud:
     openfeign:
@@ -27,40 +26,29 @@ spring:
           default:
             loggerLevel: FULL
 
+auth:
+  cookie:
+    secure: false
+
 logging:
   file:
     path: ./logs
   level:
-    io.chaekpool.auth: DEBUG
+    root: INFO
+    io.chaekpool: DEBUG
     io.chaekpool.common.logger: DEBUG
-
-common:
-  cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS}
-
-auth:
-  jwt:
-    secret: ${JWT_SECRET}
-    access-token-validity-seconds: ${JWT_ACCESS_TOKEN_VALIDITY_SECONDS}
-    refresh-token-validity-seconds: ${JWT_REFRESH_TOKEN_VALIDITY_SECONDS}
-
-  cookie:
-    http-only: true
-    secure: true
-    same-site: Strict
-    path: /api/v1
-    max-age: ${JWT_REFRESH_TOKEN_VALIDITY_SECONDS}
-
-  oauth:
-    kakao:
-      client-id: ${KAKAO_CLIENT_ID}
-      client-secret: ${KAKAO_CLIENT_SECRET}
-      redirect-uri: ${KAKAO_REDIRECT_URI}
+    org.jooq.tools.LoggerListener: DEBUG
 
 management:
   endpoint:
     health:
       show-details: always
   metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
     tags:
       environment: local
+  tracing:
+    sampling:
+      probability: 1.0
