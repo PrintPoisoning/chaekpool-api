@@ -1,7 +1,9 @@
 package io.chaekpool.auth.annotation
 
+import io.chaekpool.auth.constant.AuthConstant.BEARER_PREFIX
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.core.MethodParameter
+import org.springframework.http.HttpHeaders.AUTHORIZATION
 import org.springframework.stereotype.Component
 import org.springframework.web.bind.support.WebDataBinderFactory
 import org.springframework.web.context.request.NativeWebRequest
@@ -23,6 +25,6 @@ class AccessTokenAnnotationResolver : HandlerMethodArgumentResolver {
     ): Any? {
         val request = webRequest.getNativeRequest(HttpServletRequest::class.java)
 
-        return request?.getHeader("Authorization")?.removePrefix("Bearer ")?.trim()
+        return request?.getHeader(AUTHORIZATION)?.removePrefix(BEARER_PREFIX)?.trim()
     }
 }
