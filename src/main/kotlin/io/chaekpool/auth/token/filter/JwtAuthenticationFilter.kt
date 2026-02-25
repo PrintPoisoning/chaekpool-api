@@ -1,5 +1,6 @@
 package io.chaekpool.auth.token.filter
 
+import io.chaekpool.auth.constant.AuthConstant.BEARER_PREFIX
 import io.chaekpool.auth.exception.ErrorCodeAccessDeniedException
 import io.chaekpool.auth.exception.ErrorCodeBadCredentialsException
 import io.chaekpool.auth.token.service.BlacklistManager
@@ -9,6 +10,7 @@ import io.chaekpool.common.exception.internal.UnauthorizedException
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.springframework.http.HttpHeaders.AUTHORIZATION
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource
@@ -32,10 +34,10 @@ class JwtAuthenticationFilter(
     }
 
     private fun resolveToken(request: HttpServletRequest): String? {
-        val bearer = request.getHeader("Authorization")
+        val bearer = request.getHeader(AUTHORIZATION)
 
-        return if (!bearer.isNullOrBlank() && bearer.startsWith("Bearer ")) {
-            bearer.substring(7)
+        return if (!bearer.isNullOrBlank() && bearer.startsWith(BEARER_PREFIX)) {
+            bearer.removePrefix(BEARER_PREFIX)
         } else {
             null
         }
