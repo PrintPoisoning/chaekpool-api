@@ -12,6 +12,7 @@ import io.chaekpool.auth.token.exception.InvalidTokenException
 import io.chaekpool.auth.token.exception.MissingClaimException
 import io.chaekpool.auth.token.exception.TokenExpiredException
 import io.chaekpool.common.exception.ServiceException
+import io.chaekpool.common.util.UuidV7Util
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Component
 import java.text.ParseException
@@ -33,11 +34,13 @@ class JwtProvider(
     fun createRefreshToken(userId: UUID): String = createToken(userId.toString(), props.refreshTokenValiditySeconds)
 
     private fun createToken(subject: String, validitySeconds: Long): String {
+        val jti = UuidV7Util.generate()
         val now = Instant.now()
         val exp = now.plusSeconds(validitySeconds)
 
         val claims = JWTClaimsSet.Builder()
             .subject(subject)
+            .jwtID(jti.toString())
             .issueTime(Date.from(now))
             .expirationTime(Date.from(exp))
             .build()
@@ -50,16 +53,6 @@ class JwtProvider(
         signedJWT.sign(MACSigner(secretKey))
 
         return signedJWT.serialize()
-    }
-
-    fun validateToken(token: String): Boolean {
-        return try {
-            assertToken(token)
-            true
-        } catch (e: Exception) {
-            log.error(e) { "JWT validation error" }
-            false
-        }
     }
 
     fun assertToken(token: String) {
@@ -98,11 +91,17 @@ class JwtProvider(
         return UUID.fromString(signedJWT.jwtClaimsSet.subject)
     }
 
-    fun getExpirationTime(token: String): Long {
+    fun getExpiresIn(token: String): Long {
         val jwt = SignedJWT.parse(token)
         val exp = jwt.jwtClaimsSet.expirationTime.toInstant()
         val now = Date().toInstant()
 
         return exp.epochSecond - now.epochSecond
+    }
+
+    fun getJti(token: String): String {
+        val jwt = SignedJWT.parse(token)
+        return jwt.jwtClaimsSet.jwtid
+            ?: throw MissingClaimException("JWT has no jti")
     }
 }
