@@ -1,4 +1,4 @@
-package io.chaekpool.auth.oauth.config
+package io.chaekpool.auth.oauth2.config
 
 import feign.Logger
 import feign.Request
@@ -11,8 +11,8 @@ import org.springframework.context.annotation.Configuration
 import java.time.Duration
 
 @Configuration
-@EnableFeignClients(basePackages = ["io.chaekpool.auth.oauth.client.kakao"])
-class KakaoFeignConfig {
+@EnableFeignClients(basePackages = ["io.chaekpool.auth.oauth2.client"])
+class OAuth2FeignConfig {
 
     @Bean
     fun feignLogger(): Logger = SingleLineFeignLogger()
@@ -23,8 +23,8 @@ class KakaoFeignConfig {
     @Bean
     fun options(): Request.Options =
         Request.Options(
-            Duration.ofMillis(5_000),   // connectTimeout
-            Duration.ofMillis(10_000),  // readTimeout
+            Duration.ofMillis(5_000),
+            Duration.ofMillis(10_000),
             true
         )
 
@@ -32,5 +32,5 @@ class KakaoFeignConfig {
     fun feignRetryer(): feign.Retryer = feign.Retryer.Default(100, 1000, 3)
 
     @Bean
-    fun kakaoErrorDecoder(): ErrorDecoder = FeignErrorDecoder()
+    fun errorDecoder(): ErrorDecoder = FeignErrorDecoder()
 }
