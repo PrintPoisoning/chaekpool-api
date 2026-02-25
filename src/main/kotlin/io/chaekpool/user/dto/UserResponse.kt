@@ -16,9 +16,9 @@ data class UserResponse(
     @param:JsonProperty("profile_image_url")
     val profileImageUrl: String?,
 
-    @param:JsonProperty("status")
-    val status: String,
-
     @param:JsonProperty("visibility")
-    val visibility: String
+    val visibility: String,
+
+    @param:JsonProperty("status")
+    val status: String
 )
