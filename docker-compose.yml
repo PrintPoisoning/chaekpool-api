@@ -30,7 +30,7 @@ services:
     container_name: cp_valkey
     restart: always
     ports:
-      - "${REDIS_PORT}:6379"
+      - "${CACHE_PORT}:6379"
     environment:
       TZ: Asia/Seoul
     command:
@@ -38,7 +38,7 @@ services:
       - --appendonly
       - "yes"
       - --requirepass
-      - "${REDIS_PASSWORD}"
+      - "${CACHE_PASSWORD}"
       - --maxmemory
       - "256mb"
       - --maxmemory-policy
