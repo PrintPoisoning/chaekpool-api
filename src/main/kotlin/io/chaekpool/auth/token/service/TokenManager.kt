@@ -4,7 +4,9 @@ import io.chaekpool.auth.token.dto.TokenPair
 import io.chaekpool.auth.token.entity.RefreshTokenEntity
 import io.chaekpool.auth.token.exception.TokenNotFoundException
 import io.chaekpool.auth.token.repository.RefreshTokenRepository
+import io.chaekpool.common.exception.internal.ForbiddenException
 import io.chaekpool.common.filter.UserMetadataContext
+import io.chaekpool.common.util.MaskingUtil.maskIpLastOctets
 import io.chaekpool.common.util.isTrueOrThrow
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
@@ -27,36 +29,34 @@ class TokenManager(
     }
 
     fun issueRefreshToken(userId: UUID, token: String): RefreshTokenEntity {
-        val key = "$userId:${UUID.randomUUID()}"
-        val entity = RefreshTokenEntity(
-            key = key,
-            userId = userId,
-            token = token,
-        )
-
+        val jti = jwtProvider.getJti(token)
         val metadata by userMetadataContext
 
-        // TODO: metadata db 추가 예정
-        log.debug { "[TokenManager] metadata=$metadata" }
+        val entity = RefreshTokenEntity(
+            jti = jti,
+            userId = userId,
+            ip = metadata?.ip?.maskIpLastOctets(2),
+            userAgent = metadata?.userAgent,
+            device = metadata?.device,
+            platformType = metadata?.platformType
+        )
 
         return refreshTokenRepository.save(entity)
     }
 
     fun assertRefreshToken(userId: UUID, refreshToken: String) {
         jwtProvider.assertToken(refreshToken)
-        existsByUserIdAndToken(userId, refreshToken).isTrueOrThrow { TokenNotFoundException() }
+        val jti = jwtProvider.getJti(refreshToken)
+
+        val entity = refreshTokenRepository.findById(jti)
+            .orElseThrow { TokenNotFoundException() }
+
+        (entity.userId == userId).isTrueOrThrow {
+            ForbiddenException("Token userId mismatch")
+        }
     }
 
-    fun findByUserIdAndToken(userId: UUID, token: String): RefreshTokenEntity? {
-        return refreshTokenRepository.findByUserId(userId)
-            .firstOrNull { it.token == token }
-    }
-
-    fun existsByUserIdAndToken(userId: UUID, token: String): Boolean {
-        return findByUserIdAndToken(userId, token) != null
-    }
-
-    fun deleteByUserIdAndToken(userId: UUID, token: String) {
-        findByUserIdAndToken(userId, token)?.let { refreshTokenRepository.delete(it) }
+    fun deleteByJti(jti: String) {
+        refreshTokenRepository.deleteById(jti)
     }
 }

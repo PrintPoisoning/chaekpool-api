@@ -14,18 +14,18 @@ class BlacklistManager(
 ) {
 
     fun blacklistToken(userId: UUID, token: String) {
-        val expiresIn = jwtProvider.getExpirationTime(token)
+        val jti = jwtProvider.getJti(token)
+        val expiresIn = jwtProvider.getExpiresIn(token)
 
         if (expiresIn > 0) {
-            val key = "$userId:$token"
-            val entity = BlacklistEntity(key, token, expiresIn)
-
+            val entity = BlacklistEntity(jti, expiresIn)
             blacklistRepository.save(entity)
         }
     }
 
     fun assertToken(userId: UUID, token: String) {
-        val isNotBlacklisted = !blacklistRepository.existsById("$userId:$token")
+        val jti = jwtProvider.getJti(token)
+        val isNotBlacklisted = !blacklistRepository.existsById(jti)
 
         isNotBlacklisted.isTrueOrThrow { TokenBlacklistedException() }
     }
