@@ -4,6 +4,7 @@ val kotlinLoggingJvmVersion = "7.0.3"
 val lokiLogbackAppenderVersion = "2.0.3"
 val springCloudVersion = "2025.1.1"
 val uaJavaVersion = "1.6.1"
+val uuidGeneratorVersion = "5.2.0"
 val kotestVersion = "6.1.0"
 val mockkVersion = "1.14.9"
 val springmockkVersion = "5.0.1"
@@ -63,6 +64,9 @@ dependencies {
 
     // === ua-parser ===
     implementation("com.github.ua-parser:uap-java:$uaJavaVersion")
+
+    // === UUID v7 Generator ===
+    implementation("com.fasterxml.uuid:java-uuid-generator:$uuidGeneratorVersion")
 
     // === Database ===
     implementation("org.springframework.boot:spring-boot-starter-jooq")
@@ -201,6 +205,8 @@ tasks.register("jooqGenerate") {
                                     .withJavaTimeTypes(true)
                                     .withKotlinNotNullPojoAttributes(true)
                                     .withKotlinNotNullRecordAttributes(true)
+//                                    .withKotlinDefaultedNullablePojoAttributes(false)
+//                                    .withKotlinDefaultedNullableRecordAttributes(false)
                             )
                             .withTarget(
                                 org.jooq.meta.jaxb.Target()
