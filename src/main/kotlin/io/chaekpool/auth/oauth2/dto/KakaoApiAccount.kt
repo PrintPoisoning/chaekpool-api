@@ -1,8 +1,8 @@
-package io.chaekpool.auth.oauth.dto.kakao
+package io.chaekpool.auth.oauth2.dto
 
 import com.fasterxml.jackson.annotation.JsonProperty
 
-data class KakaoAccount(
+data class KakaoApiAccount(
     @param:JsonProperty("email")
     val email: String?,
 
@@ -19,7 +19,7 @@ data class KakaoAccount(
     val isEmailVerified: Boolean?,
 
     @param:JsonProperty("profile")
-    val profile: KakaoProfile?,
+    val profile: KakaoApiProfile?,
 
     @param:JsonProperty("profile_nickname_needs_agreement")
     val profileNicknameNeedsAgreement: Boolean?,

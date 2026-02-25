@@ -1,8 +1,8 @@
-package io.chaekpool.auth.oauth.dto.kakao
+package io.chaekpool.auth.oauth2.dto
 
 import com.fasterxml.jackson.annotation.JsonProperty
 
-data class KakaoProperties(
+data class KakaoApiProperties(
     @param:JsonProperty("nickname")
     val nickname: String,
 
