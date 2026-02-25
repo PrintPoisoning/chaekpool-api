@@ -9,6 +9,8 @@ import io.chaekpool.auth.token.config.JwtProperties
 import io.chaekpool.auth.token.exception.InvalidTokenException
 import io.chaekpool.auth.token.exception.MissingClaimException
 import io.chaekpool.auth.token.exception.TokenExpiredException
+import io.kotest.assertions.throwables.shouldNotThrow
+import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.longs.shouldBeGreaterThan
@@ -46,7 +48,15 @@ class JwtProviderTest : BehaviorSpec({
             }
 
             Then("토큰이 유효하다") {
-                jwtProvider.validateToken(token) shouldBe true
+                shouldNotThrowAny {
+                    jwtProvider.assertToken(token)
+                }
+            }
+
+            Then("토큰에 jti claim이 포함된다") {
+                val jti = jwtProvider.getJti(token)
+                jti shouldNotBe null
+                UUID.fromString(jti)
             }
         }
     }
@@ -63,7 +73,7 @@ class JwtProviderTest : BehaviorSpec({
             }
 
             Then("만료 시간이 설정값과 일치한다") {
-                val expirationTime = jwtProvider.getExpirationTime(token)
+                val expirationTime = jwtProvider.getExpiresIn(token)
                 expirationTime shouldBeGreaterThan 604700
                 expirationTime shouldBeLessThan 604900
             }
@@ -148,38 +158,6 @@ class JwtProviderTest : BehaviorSpec({
         }
     }
 
-    Given("validateToken을 호출했을 때") {
-        When("유효한 토큰을 전달하면") {
-            Then("true를 반환한다") {
-                val userId = UUID.randomUUID()
-                val token = jwtProvider.createAccessToken(userId)
-
-                jwtProvider.validateToken(token) shouldBe true
-            }
-        }
-
-        When("잘못된 토큰을 전달하면") {
-            Then("false를 반환한다") {
-                jwtProvider.validateToken("invalid.token") shouldBe false
-            }
-        }
-
-        When("만료된 토큰을 전달하면") {
-            Then("false를 반환한다") {
-                val expiredJwtProperties = JwtProperties(
-                    secret = testJwtProperties.secret,
-                    accessTokenValiditySeconds = -1,
-                    refreshTokenValiditySeconds = testJwtProperties.refreshTokenValiditySeconds
-                )
-                val expiredJwtProvider = JwtProvider(expiredJwtProperties)
-                val userId = UUID.randomUUID()
-                val expiredToken = expiredJwtProvider.createAccessToken(userId)
-
-                jwtProvider.validateToken(expiredToken) shouldBe false
-            }
-        }
-    }
-
     Given("getUserId를 호출했을 때") {
         When("유효한 토큰을 전달하면") {
             Then("올바른 userId를 반환한다") {
@@ -206,7 +184,7 @@ class JwtProviderTest : BehaviorSpec({
                 val userId = UUID.randomUUID()
                 val token = jwtProvider.createAccessToken(userId)
 
-                val expirationTime = jwtProvider.getExpirationTime(token)
+                val expirationTime = jwtProvider.getExpiresIn(token)
                 expirationTime shouldBeGreaterThan 890
                 expirationTime shouldBeLessThan 910
             }
@@ -223,8 +201,40 @@ class JwtProviderTest : BehaviorSpec({
                 val userId = UUID.randomUUID()
                 val expiredToken = expiredJwtProvider.createAccessToken(userId)
 
-                val expirationTime = jwtProvider.getExpirationTime(expiredToken)
+                val expirationTime = jwtProvider.getExpiresIn(expiredToken)
                 expirationTime shouldBeLessThan 0
+            }
+        }
+    }
+
+    Given("getJti를 호출했을 때") {
+        When("유효한 토큰을 전달하면") {
+            Then("JTI를 반환한다") {
+                val userId = UUID.randomUUID()
+                val token = jwtProvider.createAccessToken(userId)
+
+                val jti = jwtProvider.getJti(token)
+                jti shouldNotBe null
+                UUID.fromString(jti)
+            }
+        }
+
+        When("jti가 없는 토큰을 전달하면") {
+            Then("MissingClaimException이 발생한다") {
+                val claims = JWTClaimsSet.Builder()
+                    .subject(UUID.randomUUID().toString())
+                    .issueTime(Date.from(Instant.now()))
+                    .expirationTime(Date.from(Instant.now().plusSeconds(900)))
+                    .build()
+
+                val jwt = SignedJWT(JWSHeader(JWSAlgorithm.HS256), claims)
+                jwt.sign(MACSigner(testJwtProperties.secret))
+                val token = jwt.serialize()
+
+                val exception = shouldThrow<MissingClaimException> {
+                    jwtProvider.getJti(token)
+                }
+                exception.message shouldContain "JWT has no jti"
             }
         }
     }

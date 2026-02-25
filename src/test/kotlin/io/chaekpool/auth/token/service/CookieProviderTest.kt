@@ -6,6 +6,33 @@ import io.kotest.matchers.shouldBe
 
 class CookieProviderTest : BehaviorSpec({
 
+    val defaultProperties = CookieProperties(
+        httpOnly = false,
+        secure = false,
+        sameSite = "Lax",
+        path = "/",
+        maxAge = 3600L
+    )
+
+    Given("CookieProperties가 주어졌을 때") {
+        val provider = CookieProvider(defaultProperties)
+
+        When("refreshTokenCookie를 호출하면") {
+            val refreshToken = "default-token"
+            val cookie = provider.refreshTokenCookie(refreshToken)
+
+            Then("기본값으로 쿠키가 생성된다") {
+                cookie.name shouldBe "refresh_token"
+                cookie.value shouldBe refreshToken
+                cookie.isHttpOnly shouldBe false
+                cookie.isSecure shouldBe false
+                cookie.sameSite shouldBe "Lax"
+                cookie.path shouldBe "/"
+                cookie.maxAge.seconds shouldBe 3600L
+            }
+        }
+    }
+
     Given("커스텀 CookieProperties가 주어졌을 때") {
         val properties = CookieProperties(
             httpOnly = true,
@@ -32,29 +59,8 @@ class CookieProviderTest : BehaviorSpec({
         }
     }
 
-    Given("기본 CookieProperties가 주어졌을 때") {
-        val properties = CookieProperties()
-        val provider = CookieProvider(properties)
-
-        When("refreshTokenCookie를 호출하면") {
-            val refreshToken = "default-token"
-            val cookie = provider.refreshTokenCookie(refreshToken)
-
-            Then("기본값으로 쿠키가 생성된다") {
-                cookie.name shouldBe "refresh_token"
-                cookie.value shouldBe refreshToken
-                cookie.isHttpOnly shouldBe false
-                cookie.isSecure shouldBe false
-                cookie.sameSite shouldBe "Lax"
-                cookie.path shouldBe "/"
-                cookie.maxAge.seconds shouldBe 3600L
-            }
-        }
-    }
-
     Given("빈 문자열 토큰이 주어졌을 때") {
-        val properties = CookieProperties()
-        val provider = CookieProvider(properties)
+        val provider = CookieProvider(defaultProperties)
 
         When("refreshTokenCookie를 호출하면") {
             val cookie = provider.refreshTokenCookie("")
@@ -67,8 +73,7 @@ class CookieProviderTest : BehaviorSpec({
     }
 
     Given("특수문자가 포함된 토큰이 주어졌을 때") {
-        val properties = CookieProperties()
-        val provider = CookieProvider(properties)
+        val provider = CookieProvider(defaultProperties)
 
         When("refreshTokenCookie를 호출하면") {
             val specialToken = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0In0.abc123-_"

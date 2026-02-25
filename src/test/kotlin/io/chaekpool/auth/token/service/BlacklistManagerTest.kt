@@ -27,21 +27,22 @@ class BlacklistManagerTest : BehaviorSpec({
 
     Given("만료 시간이 3600초인 유효한 토큰이 주어졌을 때") {
         When("해당 토큰을 블랙리스트에 추가하면") {
-            Then("토큰이 만료 시간과 함께 저장된다") {
+            Then("JTI와 만료 시간이 저장된다") {
                 val userId = UUID.randomUUID()
                 val token = "valid-access-token"
+                val jti = "test-jti-uuid"
                 val expiresIn = 3600L
                 val slot = slot<BlacklistEntity>()
 
-                every { jwtProvider.getExpirationTime(token) } returns expiresIn
+                every { jwtProvider.getJti(token) } returns jti
+                every { jwtProvider.getExpiresIn(token) } returns expiresIn
                 every { blacklistRepository.save(capture(slot)) } answers { firstArg() }
 
                 blacklistManager.blacklistToken(userId, token)
 
                 verify(exactly = 1) { blacklistRepository.save(slot.captured) }
-                slot.captured.key shouldBe "$userId:$token"
-                slot.captured.token shouldBe token
-                slot.captured.expiration shouldBe expiresIn
+                slot.captured.jti shouldBe jti
+                slot.captured.expiresIn shouldBe expiresIn
             }
         }
     }
@@ -52,7 +53,8 @@ class BlacklistManagerTest : BehaviorSpec({
                 val userId = UUID.randomUUID()
                 val token = "expired-token"
 
-                every { jwtProvider.getExpirationTime(token) } returns 0L
+                every { jwtProvider.getJti(token) } returns "expired-jti"
+                every { jwtProvider.getExpiresIn(token) } returns 0L
 
                 blacklistManager.blacklistToken(userId, token)
 
@@ -67,7 +69,8 @@ class BlacklistManagerTest : BehaviorSpec({
                 val userId = UUID.randomUUID()
                 val token = "negative-ttl-token"
 
-                every { jwtProvider.getExpirationTime(token) } returns -100L
+                every { jwtProvider.getJti(token) } returns "negative-jti"
+                every { jwtProvider.getExpiresIn(token) } returns -100L
 
                 blacklistManager.blacklistToken(userId, token)
 
@@ -81,16 +84,18 @@ class BlacklistManagerTest : BehaviorSpec({
             Then("토큰이 저장된다") {
                 val userId = UUID.randomUUID()
                 val token = "about-to-expire-token"
+                val jti = "test-jti-uuid-2"
                 val expiresIn = 1L
                 val slot = slot<BlacklistEntity>()
 
-                every { jwtProvider.getExpirationTime(token) } returns expiresIn
+                every { jwtProvider.getJti(token) } returns jti
+                every { jwtProvider.getExpiresIn(token) } returns expiresIn
                 every { blacklistRepository.save(capture(slot)) } answers { firstArg() }
 
                 blacklistManager.blacklistToken(userId, token)
 
                 verify(exactly = 1) { blacklistRepository.save(slot.captured) }
-                slot.captured.expiration shouldBe expiresIn
+                slot.captured.expiresIn shouldBe expiresIn
             }
         }
     }
@@ -100,9 +105,10 @@ class BlacklistManagerTest : BehaviorSpec({
             Then("TokenBlacklistedException이 발생한다") {
                 val userId = UUID.randomUUID()
                 val token = "blacklisted-token"
-                val key = "$userId:$token"
+                val jti = "blacklisted-jti"
 
-                every { blacklistRepository.existsById(key) } returns true
+                every { jwtProvider.getJti(token) } returns jti
+                every { blacklistRepository.existsById(jti) } returns true
 
                 shouldThrow<TokenBlacklistedException> {
                     blacklistManager.assertToken(userId, token)
@@ -116,9 +122,10 @@ class BlacklistManagerTest : BehaviorSpec({
             Then("예외가 발생하지 않는다") {
                 val userId = UUID.randomUUID()
                 val token = "clean-token"
-                val key = "$userId:$token"
+                val jti = "clean-jti"
 
-                every { blacklistRepository.existsById(key) } returns false
+                every { jwtProvider.getJti(token) } returns jti
+                every { blacklistRepository.existsById(jti) } returns false
 
                 shouldNotThrow<TokenBlacklistedException> {
                     blacklistManager.assertToken(userId, token)
@@ -134,8 +141,10 @@ class BlacklistManagerTest : BehaviorSpec({
                 val token1 = "first-token"
                 val token2 = "second-token"
 
-                every { jwtProvider.getExpirationTime(token1) } returns 3600L
-                every { jwtProvider.getExpirationTime(token2) } returns 3600L
+                every { jwtProvider.getJti(token1) } returns "jti-1"
+                every { jwtProvider.getJti(token2) } returns "jti-2"
+                every { jwtProvider.getExpiresIn(token1) } returns 3600L
+                every { jwtProvider.getExpiresIn(token2) } returns 3600L
                 every { blacklistRepository.save(any()) } answers { firstArg() }
 
                 blacklistManager.blacklistToken(userId, token1)
@@ -152,8 +161,10 @@ class BlacklistManagerTest : BehaviorSpec({
                 val userId1 = UUID.randomUUID()
                 val userId2 = UUID.randomUUID()
                 val token = "same-token"
+                val jti = "same-jti"
 
-                every { jwtProvider.getExpirationTime(token) } returns 3600L
+                every { jwtProvider.getJti(token) } returns jti
+                every { jwtProvider.getExpiresIn(token) } returns 3600L
                 every { blacklistRepository.save(any()) } answers { firstArg() }
 
                 blacklistManager.blacklistToken(userId1, token)
