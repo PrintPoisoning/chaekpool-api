@@ -1,14 +1,15 @@
 package io.chaekpool.user.service
 
 import io.chaekpool.common.exception.internal.NotFoundException
-import io.chaekpool.generated.jooq.tables.references.USERS
+import io.chaekpool.generated.jooq.enums.UserStatusType
+import io.chaekpool.generated.jooq.enums.UserVisibilityType
+import io.chaekpool.generated.jooq.tables.pojos.Users
 import io.chaekpool.user.repository.UserRepository
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
-import org.jooq.Record
 import java.util.UUID
 
 class UserServiceTest : BehaviorSpec({
@@ -25,20 +26,19 @@ class UserServiceTest : BehaviorSpec({
         When("getUser를 호출하면") {
             Then("사용자 정보를 반환한다") {
                 val userId = UUID.randomUUID()
-                val record = mockk<Record> {
-                    every { get(USERS.ID) } returns userId
-                    every { get(USERS.EMAIL) } returns "test@example.com"
-                    every { get(USERS.USERNAME) } returns "testuser"
-                    every { get(USERS.PROFILE_IMAGE_URL) } returns "https://example.com/profile.jpg"
-                    every { get(USERS.STATUS) } returns mockk {
-                        every { literal } returns "ACTIVE"
-                    }
-                    every { get(USERS.VISIBILITY) } returns mockk {
-                        every { literal } returns "PUBLIC"
-                    }
-                }
+                val userPojo = Users(
+                    id = userId,
+                    email = "test@example.com",
+                    username = "testuser",
+                    profileImageUrl = "https://example.com/profile.jpg",
+                    visibility = UserVisibilityType.PUBLIC,
+                    status = UserStatusType.ACTIVE,
+                    lastLoginAt = null,
+                    createdAt = null,
+                    updatedAt = null
+                )
 
-                every { userRepository.findById(userId) } returns record
+                every { userRepository.findById(userId) } returns userPojo
 
                 val result = userService.getUser(userId)
 
@@ -46,8 +46,8 @@ class UserServiceTest : BehaviorSpec({
                 result.email shouldBe "test@example.com"
                 result.username shouldBe "testuser"
                 result.profileImageUrl shouldBe "https://example.com/profile.jpg"
-                result.status shouldBe "ACTIVE"
                 result.visibility shouldBe "PUBLIC"
+                result.status shouldBe "ACTIVE"
             }
         }
     }
