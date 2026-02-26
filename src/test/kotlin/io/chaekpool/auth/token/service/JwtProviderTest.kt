@@ -9,7 +9,6 @@ import io.chaekpool.auth.token.config.JwtProperties
 import io.chaekpool.auth.token.exception.InvalidTokenException
 import io.chaekpool.auth.token.exception.MissingClaimException
 import io.chaekpool.auth.token.exception.TokenExpiredException
-import io.kotest.assertions.throwables.shouldNotThrow
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.BehaviorSpec
@@ -63,9 +62,10 @@ class JwtProviderTest : BehaviorSpec({
 
     Given("createRefreshToken을 호출했을 때") {
         val userId = UUID.randomUUID()
+        val provider = "KAKAO"
 
-        When("유효한 userId를 전달하면") {
-            val token = jwtProvider.createRefreshToken(userId)
+        When("유효한 userId와 provider를 전달하면") {
+            val token = jwtProvider.createRefreshToken(userId, provider)
 
             Then("JWT 토큰 문자열을 반환한다") {
                 token shouldNotBe null
@@ -76,6 +76,11 @@ class JwtProviderTest : BehaviorSpec({
                 val expirationTime = jwtProvider.getExpiresIn(token)
                 expirationTime shouldBeGreaterThan 604700
                 expirationTime shouldBeLessThan 604900
+            }
+
+            Then("토큰에서 provider를 추출할 수 있다") {
+                val extractedProvider = jwtProvider.getProvider(token)
+                extractedProvider shouldBe provider
             }
         }
     }
@@ -235,6 +240,28 @@ class JwtProviderTest : BehaviorSpec({
                     jwtProvider.getJti(token)
                 }
                 exception.message shouldContain "JWT has no jti"
+            }
+        }
+    }
+
+    Given("getProvider를 호출했을 때") {
+        When("provider claim이 있는 refresh token을 전달하면") {
+            Then("provider 값을 반환한다") {
+                val userId = UUID.randomUUID()
+                val token = jwtProvider.createRefreshToken(userId, "KAKAO")
+
+                val provider = jwtProvider.getProvider(token)
+                provider shouldBe "KAKAO"
+            }
+        }
+
+        When("provider claim이 없는 토큰을 전달하면") {
+            Then("null을 반환한다") {
+                val userId = UUID.randomUUID()
+                val token = jwtProvider.createAccessToken(userId)
+
+                val provider = jwtProvider.getProvider(token)
+                provider shouldBe null
             }
         }
     }

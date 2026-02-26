@@ -49,12 +49,14 @@ io.chaekpool/
 │   ├── dto/                 # AuthResponse
 │   ├── exception/           # AuthException
 │   ├── handler/             # CustomAccessDeniedHandler, CustomAuthenticationEntryPoint
-│   ├── oauth/               # Kakao OAuth 로그인
-│   │   ├── client/kakao/    # KakaoAuthClient, KakaoUserClient (Feign)
-│   │   ├── config/          # FeignConfig (Logger, ErrorDecoder)
-│   │   ├── controller/      # OAuthKakaoController (로그인/콜백)
-│   │   ├── dto/kakao/       # KakaoTokenResponse, KakaoUserInfoResponse
-│   │   └── service/         # KakaoOAuthService
+│   ├── oauth2/              # Kakao OAuth 로그인
+│   │   ├── client/          # KakaoAuthClient, KakaoApiClient (Feign)
+│   │   ├── config/          # KakaoAuthProperties, OAuth2FeignConfig
+│   │   ├── controller/      # KakaoController (콜백, OAuth 토큰 갱신)
+│   │   ├── dto/             # KakaoAuthTokenResponse, KakaoAuthRefreshTokenResponse, KakaoApiAccountResponse 등
+│   │   ├── exception/       # ProviderNotFoundException
+│   │   ├── repository/      # ProviderAccountRepository (jOOQ)
+│   │   └── service/         # KakaoService
 │   └── token/               # JWT 토큰 관리
 │       ├── config/          # JwtProperties
 │       ├── controller/      # TokenController (refresh, rotate, logout)
@@ -63,7 +65,7 @@ io.chaekpool/
 │       ├── exception/       # InvalidToken, TokenExpired, TokenBlacklisted 등
 │       ├── filter/          # JwtAuthenticationFilter
 │       ├── repository/      # RefreshTokenRepository, TokenBlacklistRepository
-│       └── service/         # TokenService, CookieService, JwtProvider
+│       └── service/         # TokenService, TokenManager, BlacklistManager, CookieService, JwtProvider
 ├── common/                  # 공통 기능
 │   ├── config/              # WebSecurityConfig, CorsProperties, MetricsConfig
 │   ├── controller/          # CommonController (robots.txt, healthcheck)
@@ -84,12 +86,20 @@ io.chaekpool/
 
 ### 테스트 구조
 ```
-src/test/kotlin/io/chaekpool/
-├── config/                  # TestcontainersConfig (PostgreSQL, Valkey)
-├── common/
-│   ├── filter/              # AccessLogFilterTest, UserMetadataFilterTest, UserMetadataContextTest
-│   └── util/                # AssertionExtensionTest, UserMetadataExtractorTest
-└── ChaekpoolApplicationTests.kt  # Spring Context 로드 테스트
+src/test/kotlin/
+├── io/kotest/provided/
+│   └── ProjectConfig.kt        # Kotest Spring Extension 글로벌 설정
+└── io/chaekpool/
+    ├── support/                 # TestcontainersConfig (PostgreSQL, Valkey)
+    ├── auth/
+    │   ├── oauth2/
+    │   │   ├── dto/             # KakaoAuthTokenResponseTest (TC 통합 테스트)
+    │   │   └── service/         # KakaoServiceTest
+    │   └── token/service/       # TokenServiceTest, JwtProviderTest
+    ├── common/
+    │   ├── filter/              # AccessLogFilterTest, UserMetadataFilterTest, UserMetadataContextTest
+    │   └── util/                # AssertionExtensionTest, UserMetadataExtractorTest
+    └── ChaekpoolApplicationTests.kt  # Spring Context 로드 테스트
 ```
 
 ### 주요 기술 스택
@@ -288,7 +298,7 @@ interface KakaoAuthClient {
 - Stateless Session (세션 없음)
 - CSRF, FormLogin, HttpBasic 비활성화
 - JWT 기반 인증
-- `/api/v1/auth/**` 공개, 나머지 인증 필요
+- `/api/v1/auth/oauth2/*/callback`, `/api/v1/auth/token/refresh` 공개, 나머지 인증 필요
 
 **필터 체인**
 ```
@@ -424,7 +434,7 @@ BREAKING CHANGE: 설명 (있을 경우만)
 1. **scope**: 소문자, 선택사항 (`auth`, `common`, `user`, `test` 등)
 2. **제목**: 한국어, 명령형, 마침표 없음, 72자 이하
 3. **본문**: 파일 단위 변경사항 (`add:`, `modify:`, `delete:`) + 로직 설명
-4. **커밋 세분화**: 기능/로직/시간 기준으로 분리, 하나의 논리적 변경 = 하나의 커밋
+4. **커밋 세분화**: 기능/로직/시간 기준으로 분리, 하나의 논리적 변경 = 하나의 커밋. 여러 작업이 누적된 경우 시간 순서대로 커밋을 나누어 진행
 5. **Co-Authored-By 절대 금지**
 
 ### Examples
@@ -463,8 +473,12 @@ fix(common): UserMetadataFilter ThreadLocal 메모리 누수 수정
 1. **기존 패턴 준수** - 새 코드는 반드시 위 컨벤션과 기존 코드 패턴 따름
 2. **한국어 커밋** - 커밋 메시지 제목/본문 모두 한국어 사용
 3. **테스트 작성** - 새 기능은 반드시 단위 테스트 포함
-4. **경고 제거** - 빌드 시 warning, deprecated 등 모든 경고 해결
-5. **ThreadLocal cleanup** - ThreadLocal 사용 시 `try-finally`로 반드시 정리
+4. **테스트 연동 수정** - 코드 추가/수정/삭제 시 관련 테스트를 분석하여 전부 수정
+5. **경고 제거** - 빌드 시 warning, deprecated 등 모든 경고 해결
+6. **ThreadLocal cleanup** - ThreadLocal 사용 시 `try-finally`로 반드시 정리
+7. **CLAUDE.md 동기화** - 모든 작업 과정 중 그리고 종료 시점에 CLAUDE.md와 실제 코드 간 불일치가 있으면 사용자에게 질문 후 최신 정보로 지속적으로 업데이트
+8. **BP/레퍼런스 조사** - 작업을 위해 인터넷을 통해 Best Practice 및 레퍼런스를 적극적으로 조사
+9. **모호한 사항 질의** - 작업 과정 중 모호한 사항이나 선택사항은 사용자에게 최대한 질의한 후 작업
 
 ---
 

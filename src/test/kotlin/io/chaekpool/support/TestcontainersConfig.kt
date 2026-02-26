@@ -19,5 +19,6 @@ class TestcontainersConfig {
     @ServiceConnection(name = "redis")
     fun valkey(): GenericContainer<*> =
         GenericContainer("valkey/valkey:9.0.2-alpine")
+            .withExposedPorts(6379)
             .withReuse(true)
 }

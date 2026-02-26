@@ -103,7 +103,7 @@ dependencies {
     testImplementation("io.kotest:kotest-runner-junit5:$kotestVersion")
     testImplementation("io.kotest:kotest-assertions-core:$kotestVersion")
     testImplementation("io.kotest:kotest-framework-engine:$kotestVersion")
-    testImplementation("io.kotest.extensions:kotest-extensions-spring:1.3.0")
+    testImplementation("io.kotest:kotest-extensions-spring:$kotestVersion")
 
     // MockK (Kotlin용 Mocking)
     testImplementation("io.mockk:mockk:$mockkVersion")

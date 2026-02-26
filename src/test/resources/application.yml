@@ -12,6 +12,9 @@ logging:
     org.flywaydb: DEBUG
 
 auth:
+  crypto:
+    secret-key: a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6
+
   jwt:
     secret: test-jwt-secret-key-for-integration-tests-only-minimum-32-chars
     access-token-validity-seconds: 900
@@ -29,3 +32,15 @@ auth:
       client-id: test-kakao-client-id
       client-secret: test-kakao-client-secret
       redirect-uri: http://localhost:8080/api/v1/auth/oauth2/kakao/callback
+
+management:
+  defaults:
+    metrics:
+      export:
+        enabled: false
+  tracing:
+    enabled: false
+  otlp:
+    metrics:
+      export:
+        enabled: false
