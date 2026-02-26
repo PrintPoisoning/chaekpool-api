@@ -1,4 +1,4 @@
-package io.chaekpool.auth.exception
+package io.chaekpool.auth.oauth2.exception
 
 import io.chaekpool.common.exception.internal.NotFoundException
 

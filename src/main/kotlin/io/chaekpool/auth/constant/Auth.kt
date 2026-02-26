@@ -1,5 +1,5 @@
 package io.chaekpool.auth.constant
 
-object AuthConstant {
+object Auth {
     const val BEARER_PREFIX = "Bearer "
 }

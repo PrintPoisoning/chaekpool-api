@@ -1,6 +1,6 @@
 package io.chaekpool.auth.annotation
 
-import io.chaekpool.auth.constant.AuthConstant.BEARER_PREFIX
+import io.chaekpool.auth.constant.Auth.BEARER_PREFIX
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.core.MethodParameter
 import org.springframework.http.HttpHeaders.AUTHORIZATION

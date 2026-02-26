@@ -1,4 +1,4 @@
-package io.chaekpool.auth.repository
+package io.chaekpool.auth.oauth2.repository
 
 import io.chaekpool.generated.jooq.tables.pojos.AuthProviders
 import io.chaekpool.generated.jooq.tables.references.AUTH_PROVIDERS

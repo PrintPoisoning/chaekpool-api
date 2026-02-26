@@ -3,7 +3,7 @@ package io.chaekpool.auth.oauth2.dto
 import com.fasterxml.jackson.annotation.JsonProperty
 import java.util.Date
 
-data class KakaoApiUserResponse(
+data class KakaoApiAccountResponse(
     @param:JsonProperty("id")
     val id: Long,
 

@@ -1,6 +1,6 @@
 package io.chaekpool.auth.token.filter
 
-import io.chaekpool.auth.constant.AuthConstant.BEARER_PREFIX
+import io.chaekpool.auth.constant.Auth.BEARER_PREFIX
 import io.chaekpool.auth.exception.ErrorCodeAccessDeniedException
 import io.chaekpool.auth.exception.ErrorCodeBadCredentialsException
 import io.chaekpool.auth.token.service.BlacklistManager
