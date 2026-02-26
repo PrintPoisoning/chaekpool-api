@@ -12,7 +12,7 @@ import io.chaekpool.auth.token.exception.InvalidTokenException
 import io.chaekpool.auth.token.exception.MissingClaimException
 import io.chaekpool.auth.token.exception.TokenExpiredException
 import io.chaekpool.common.exception.ServiceException
-import io.chaekpool.common.util.UuidV7Util
+import io.chaekpool.common.util.UUIDv7
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Component
 import java.text.ParseException
@@ -34,7 +34,7 @@ class JwtProvider(
     fun createRefreshToken(userId: UUID): String = createToken(userId.toString(), props.refreshTokenValiditySeconds)
 
     private fun createToken(subject: String, validitySeconds: Long): String {
-        val jti = UuidV7Util.generate()
+        val jti = UUIDv7.generate()
         val now = Instant.now()
         val exp = now.plusSeconds(validitySeconds)
 
