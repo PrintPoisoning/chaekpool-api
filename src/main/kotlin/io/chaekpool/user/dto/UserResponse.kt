@@ -1,12 +1,8 @@
 package io.chaekpool.user.dto
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import java.util.UUID
 
 data class UserResponse(
-    @param:JsonProperty("id")
-    val id: UUID,
-
     @param:JsonProperty("email")
     val email: String?,
 

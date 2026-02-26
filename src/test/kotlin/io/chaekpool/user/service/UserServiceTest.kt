@@ -42,7 +42,6 @@ class UserServiceTest : BehaviorSpec({
 
                 val result = userService.getUser(userId)
 
-                result.id shouldBe userId
                 result.email shouldBe "test@example.com"
                 result.username shouldBe "testuser"
                 result.profileImageUrl shouldBe "https://example.com/profile.jpg"
