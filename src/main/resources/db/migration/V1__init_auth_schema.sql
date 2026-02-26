@@ -22,7 +22,7 @@ CREATE TABLE auth_providers
     description   VARCHAR(255)
 );
 
-CREATE TABLE user_accounts
+CREATE TABLE provider_accounts
 (
     user_id          UUID         NOT NULL,
     provider_id      UUID         NOT NULL,
@@ -34,7 +34,7 @@ CREATE TABLE user_accounts
     CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users (id),
     CONSTRAINT fk_provider FOREIGN KEY (provider_id) REFERENCES auth_providers (id),
     PRIMARY KEY (user_id, provider_id),
-    CONSTRAINT uk_user_accounts_provider_account UNIQUE (provider_id, account_id)
+    CONSTRAINT uk_provider_accounts_provider_account UNIQUE (provider_id, account_id)
 );
 
 INSERT INTO auth_providers (provider_name, description)

@@ -21,10 +21,12 @@ class TokenManager(
 
     private val log = KotlinLogging.logger {}
 
-    fun createTokenPair(userId: UUID): TokenPair {
+    fun createAccessToken(userId: UUID): String = jwtProvider.createAccessToken(userId)
+
+    fun createTokenPair(userId: UUID, provider: String): TokenPair {
         return TokenPair(
             accessToken = jwtProvider.createAccessToken(userId),
-            refreshToken = jwtProvider.createRefreshToken(userId)
+            refreshToken = jwtProvider.createRefreshToken(userId, provider)
         )
     }
 

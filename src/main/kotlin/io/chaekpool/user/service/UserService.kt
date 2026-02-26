@@ -2,7 +2,6 @@ package io.chaekpool.user.service
 
 import io.chaekpool.common.exception.internal.NotFoundException
 import io.chaekpool.common.util.notNullOrThrow
-import io.chaekpool.generated.jooq.tables.pojos.Users
 import io.chaekpool.user.dto.UserResponse
 import io.chaekpool.user.repository.UserRepository
 import org.springframework.stereotype.Service
@@ -24,25 +23,5 @@ class UserService(private val userRepository: UserRepository) {
             visibility = user.visibility!!.name,
             status = user.status!!.name
         )
-    }
-
-    @Transactional
-    fun createUser(
-        email: String?,
-        username: String?,
-        profileImageUrl: String?
-    ): Users {
-        val user = Users(
-            email = email,
-            username = username,
-            profileImageUrl = profileImageUrl
-        )
-
-        return userRepository.save(user)
-    }
-
-    @Transactional
-    fun updateLastLoginAt(userId: UUID) {
-        userRepository.updateLastLoginAt(userId)
     }
 }

@@ -290,8 +290,6 @@ gradle.properties
 
 ### Environment Files ###
 .env
-.env.local
-.env.*.local
 
 ### Logs ###
 logs/

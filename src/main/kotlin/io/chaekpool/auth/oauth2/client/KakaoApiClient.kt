@@ -1,7 +1,7 @@
 package io.chaekpool.auth.oauth2.client
 
 import io.chaekpool.auth.oauth2.config.OAuth2FeignConfig
-import io.chaekpool.auth.oauth2.dto.KakaoApiUserResponse
+import io.chaekpool.auth.oauth2.dto.KakaoApiAccountResponse
 import org.springframework.cloud.openfeign.FeignClient
 import org.springframework.http.HttpHeaders.AUTHORIZATION
 import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
@@ -21,7 +21,7 @@ interface KakaoApiClient {
         consumes = [APPLICATION_JSON_VALUE],
         produces = [APPLICATION_JSON_VALUE]
     )
-    fun getUser(
+    fun getAccount(
         @RequestHeader(AUTHORIZATION) authorization: String
-    ): KakaoApiUserResponse
+    ): KakaoApiAccountResponse
 }

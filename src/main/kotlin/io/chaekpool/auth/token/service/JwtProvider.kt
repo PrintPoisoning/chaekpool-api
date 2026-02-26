@@ -27,11 +27,36 @@ class JwtProvider(
 
     private val log = KotlinLogging.logger {}
 
+    private companion object {
+        private const val CLAIM_PROVIDER = "provider"
+    }
+
     private val secretKey: ByteArray = props.secret.toByteArray()
 
     fun createAccessToken(userId: UUID): String = createToken(userId.toString(), props.accessTokenValiditySeconds)
 
-    fun createRefreshToken(userId: UUID): String = createToken(userId.toString(), props.refreshTokenValiditySeconds)
+    fun createRefreshToken(userId: UUID, provider: String): String {
+        val jti = UUIDv7.generate()
+        val now = Instant.now()
+        val exp = now.plusSeconds(props.refreshTokenValiditySeconds)
+
+        val claims = JWTClaimsSet.Builder()
+            .subject(userId.toString())
+            .jwtID(jti.toString())
+            .claim(CLAIM_PROVIDER, provider)
+            .issueTime(Date.from(now))
+            .expirationTime(Date.from(exp))
+            .build()
+
+        val signedJWT = SignedJWT(
+            JWSHeader(JWSAlgorithm.HS256),
+            claims
+        )
+
+        signedJWT.sign(MACSigner(secretKey))
+
+        return signedJWT.serialize()
+    }
 
     private fun createToken(subject: String, validitySeconds: Long): String {
         val jti = UUIDv7.generate()
@@ -103,5 +128,10 @@ class JwtProvider(
         val jwt = SignedJWT.parse(token)
         return jwt.jwtClaimsSet.jwtid
             ?: throw MissingClaimException("JWT has no jti")
+    }
+
+    fun getProvider(token: String): String? {
+        val jwt = SignedJWT.parse(token)
+        return jwt.jwtClaimsSet.getStringClaim(CLAIM_PROVIDER)
     }
 }
