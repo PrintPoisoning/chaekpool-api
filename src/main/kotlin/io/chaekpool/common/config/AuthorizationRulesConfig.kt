@@ -13,7 +13,7 @@ class AuthorizationRulesConfig {
         auth
             .requestMatchers(
                 "/api/v1/common/healthy",
-                "/api/v1/auth/oauth2/**",
+                "/api/v1/auth/oauth2/*/callback",
                 "/api/v1/auth/token/refresh",
                 "/actuator/**",
                 "/robots.txt"
