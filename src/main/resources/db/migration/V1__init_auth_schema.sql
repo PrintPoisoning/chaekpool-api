@@ -24,14 +24,17 @@ CREATE TABLE auth_providers
 
 CREATE TABLE user_accounts
 (
-    user_id     UUID NOT NULL,
-    provider_id UUID NOT NULL,
-    Registry    JSONB,
-    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at  TIMESTAMP,
+    user_id          UUID         NOT NULL,
+    provider_id      UUID         NOT NULL,
+    account_id       VARCHAR(255) NOT NULL,
+    account_registry JSONB,
+    auth_registry    JSONB,
+    created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at       TIMESTAMP,
     CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users (id),
     CONSTRAINT fk_provider FOREIGN KEY (provider_id) REFERENCES auth_providers (id),
-    PRIMARY KEY (user_id, provider_id)
+    PRIMARY KEY (user_id, provider_id),
+    CONSTRAINT uk_user_accounts_provider_account UNIQUE (provider_id, account_id)
 );
 
 INSERT INTO auth_providers (provider_name, description)
