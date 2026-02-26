@@ -28,7 +28,7 @@ class TokenManager(
         )
     }
 
-    fun issueRefreshToken(userId: UUID, token: String): RefreshTokenEntity {
+    fun saveRefreshToken(userId: UUID, token: String): RefreshTokenEntity {
         val jti = jwtProvider.getJti(token)
         val metadata by userMetadataContext
 
