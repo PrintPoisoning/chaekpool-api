@@ -282,7 +282,7 @@ gradle-app.setting
 *.hprof
 
 ### JOOQ Generated Code ###
-build/generated-src/jooq/
+build/generated/jooq/
 src/generated/jooq/
 
 ### Gradle Properties ###

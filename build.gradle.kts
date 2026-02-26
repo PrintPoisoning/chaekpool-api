@@ -142,7 +142,7 @@ tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
 // jOOQ Configuration
 // =============================================================================
 
-val jooqOutputDir = layout.buildDirectory.dir("generated-src/jooq")
+val jooqOutputDir = layout.buildDirectory.dir("generated/jooq")
 
 sourceSets {
     main {
