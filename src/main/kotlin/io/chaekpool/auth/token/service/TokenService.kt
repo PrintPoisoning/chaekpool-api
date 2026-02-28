@@ -16,15 +16,15 @@ class TokenService(
 
     fun refresh(userId: UUID, accessToken: String?, refreshToken: String): TokenPair {
         tokenManager.assertRefreshToken(userId, refreshToken)
-        accessToken?.let { blacklistManager.blacklistToken(userId, it) }
+        accessToken?.let { blacklistManager.blacklistToken(it) }
 
         val newAccessToken = tokenManager.createAccessToken(userId)
         return TokenPair(newAccessToken, refreshToken)
     }
 
     fun deactivate(userId: UUID, accessToken: String?, refreshToken: String) {
-        accessToken?.let { blacklistManager.blacklistToken(userId, it) }
-        blacklistManager.blacklistToken(userId, refreshToken)
+        accessToken?.let { blacklistManager.blacklistToken(it) }
+        blacklistManager.blacklistToken(refreshToken)
 
         val jti = jwtProvider.getJti(refreshToken)
         tokenManager.deleteByJti(jti)

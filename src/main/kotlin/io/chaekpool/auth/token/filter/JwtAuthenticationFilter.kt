@@ -45,12 +45,9 @@ class JwtAuthenticationFilter(
 
     private fun setAuthentication(request: HttpServletRequest, token: String) {
         try {
-            jwtProvider.assertToken(token)
+            blacklistManager.assertToken(token)
 
             val userId = jwtProvider.getUserId(token)
-
-            blacklistManager.assertToken(userId, token)
-
             val authentication = UsernamePasswordAuthenticationToken(
                 userId,
                 null,

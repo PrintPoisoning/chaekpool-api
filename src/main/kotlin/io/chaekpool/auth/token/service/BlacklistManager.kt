@@ -5,7 +5,6 @@ import io.chaekpool.auth.token.exception.TokenBlacklistedException
 import io.chaekpool.auth.token.repository.BlacklistRepository
 import io.chaekpool.common.util.isTrueOrThrow
 import org.springframework.stereotype.Service
-import java.util.UUID
 
 @Service
 class BlacklistManager(
@@ -13,7 +12,7 @@ class BlacklistManager(
     private val jwtProvider: JwtProvider,
 ) {
 
-    fun blacklistToken(userId: UUID, token: String) {
+    fun blacklistToken(token: String) {
         val jti = jwtProvider.getJti(token)
         val expiresIn = jwtProvider.getExpiresIn(token)
 
@@ -23,7 +22,9 @@ class BlacklistManager(
         }
     }
 
-    fun assertToken(userId: UUID, token: String) {
+    fun assertToken(token: String) {
+        jwtProvider.assertToken(token)
+
         val jti = jwtProvider.getJti(token)
         val isNotBlacklisted = !blacklistRepository.existsById(jti)
 
