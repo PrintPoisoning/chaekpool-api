@@ -302,5 +302,9 @@ prometheus-data/
 loki-data/
 grafana-data/
 
+### E2E Test ###
+e2e/.venv/
+e2e/__pycache__/
+
 
 # End of https://www.toptal.com/developers/gitignore/api/windows,macos,linux,vim,maven,gradle,java,kotlin,git,intellij+all

@@ -224,11 +224,11 @@ ServiceException (추상)
 │       ├── ExternalForbiddenException
 │       └── ExternalUnauthorizedException
 └── auth/token/exception/
-    ├── InvalidTokenException
+    ├── InvalidTokenException (extends UnauthorizedException)
     │   ├── MissingClaimException
     │   ├── TokenExpiredException
     │   └── TokenNotFoundException
-    └── TokenBlacklistedException
+    └── TokenBlacklistedException (extends UnauthorizedException)
 ```
 
 **ErrorResponse 형식**
