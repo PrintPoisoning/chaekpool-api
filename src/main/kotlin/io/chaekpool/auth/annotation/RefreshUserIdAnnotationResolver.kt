@@ -1,6 +1,6 @@
 package io.chaekpool.auth.annotation
 
-import io.chaekpool.auth.token.service.JwtProvider
+import io.chaekpool.auth.token.provider.JwtProvider
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.core.MethodParameter
 import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames.REFRESH_TOKEN

@@ -3,6 +3,7 @@ package io.chaekpool.auth.token.service
 import io.chaekpool.auth.token.dto.TokenPair
 import io.chaekpool.auth.token.entity.RefreshTokenEntity
 import io.chaekpool.auth.token.exception.TokenNotFoundException
+import io.chaekpool.auth.token.provider.JwtProvider
 import io.chaekpool.auth.token.repository.RefreshTokenRepository
 import io.chaekpool.common.exception.internal.ForbiddenException
 import io.chaekpool.common.filter.UserMetadataContext

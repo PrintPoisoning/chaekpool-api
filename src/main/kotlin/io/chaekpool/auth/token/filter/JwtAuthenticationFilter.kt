@@ -1,8 +1,8 @@
 package io.chaekpool.auth.token.filter
 
 import io.chaekpool.auth.constant.Auth.BEARER_PREFIX
+import io.chaekpool.auth.token.provider.JwtProvider
 import io.chaekpool.auth.token.service.BlacklistManager
-import io.chaekpool.auth.token.service.JwtProvider
 import io.chaekpool.common.exception.ErrorCodeAccessDeniedException
 import io.chaekpool.common.exception.ErrorCodeBadCredentialsException
 import io.chaekpool.common.exception.internal.ForbiddenException

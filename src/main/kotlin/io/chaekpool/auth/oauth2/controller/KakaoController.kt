@@ -4,7 +4,7 @@ import io.chaekpool.auth.annotation.AccessUserId
 import io.chaekpool.auth.dto.TokenResponse
 import io.chaekpool.auth.oauth2.service.KakaoService
 import io.chaekpool.auth.token.dto.TokenPair
-import io.chaekpool.auth.token.service.CookieProvider
+import io.chaekpool.auth.token.provider.CookieProvider
 import io.micrometer.observation.annotation.Observed
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.http.HttpHeaders.SET_COOKIE

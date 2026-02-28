@@ -2,6 +2,7 @@ package io.chaekpool.auth.token.service
 
 import io.chaekpool.auth.token.entity.BlacklistEntity
 import io.chaekpool.auth.token.exception.TokenBlacklistedException
+import io.chaekpool.auth.token.provider.JwtProvider
 import io.chaekpool.auth.token.repository.BlacklistRepository
 import io.chaekpool.common.util.isTrueOrThrow
 import org.springframework.stereotype.Service

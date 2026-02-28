@@ -1,6 +1,7 @@
 package io.chaekpool.auth.token.service
 
 import io.chaekpool.auth.token.dto.TokenPair
+import io.chaekpool.auth.token.provider.JwtProvider
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.stereotype.Service
 import java.util.UUID

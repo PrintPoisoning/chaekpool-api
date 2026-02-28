@@ -1,4 +1,4 @@
-package io.chaekpool.auth.token.service
+package io.chaekpool.auth.token.provider
 
 import com.nimbusds.jose.JOSEException
 import com.nimbusds.jose.JWSAlgorithm

@@ -1,4 +1,4 @@
-package io.chaekpool.auth.token.service
+package io.chaekpool.auth.token.provider
 
 import io.chaekpool.auth.token.config.CookieProperties
 import org.springframework.http.ResponseCookie

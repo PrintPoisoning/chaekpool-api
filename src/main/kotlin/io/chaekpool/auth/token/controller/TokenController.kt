@@ -5,7 +5,7 @@ import io.chaekpool.auth.annotation.AccessUserId
 import io.chaekpool.auth.annotation.RefreshToken
 import io.chaekpool.auth.annotation.RefreshUserId
 import io.chaekpool.auth.dto.TokenResponse
-import io.chaekpool.auth.token.service.CookieProvider
+import io.chaekpool.auth.token.provider.CookieProvider
 import io.chaekpool.auth.token.service.TokenService
 import io.micrometer.observation.annotation.Observed
 import jakarta.servlet.http.HttpServletResponse
