@@ -75,7 +75,7 @@ class KakaoAuthTokenResponseTest(
         When("역직렬화하면") {
             val deserialized = jsonMapper.readValue(plainJson, KakaoAuthTokenResponse::class.java)
 
-            Then("CryptoUtil passthrough로 평문 값이 그대로 반환된다") {
+            Then("CryptoProvider passthrough로 평문 값이 그대로 반환된다") {
                 deserialized.accessToken shouldBe "plain-access-token"
                 deserialized.refreshToken shouldBe "plain-refresh-token"
             }
