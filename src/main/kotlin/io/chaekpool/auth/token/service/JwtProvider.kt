@@ -7,6 +7,7 @@ import com.nimbusds.jose.crypto.MACSigner
 import com.nimbusds.jose.crypto.MACVerifier
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
+import io.chaekpool.auth.constant.Auth.CLAIM_PROVIDER
 import io.chaekpool.auth.token.config.JwtProperties
 import io.chaekpool.auth.token.exception.InvalidTokenException
 import io.chaekpool.auth.token.exception.MissingClaimException
@@ -26,10 +27,6 @@ class JwtProvider(
 ) {
 
     private val log = KotlinLogging.logger {}
-
-    private companion object {
-        private const val CLAIM_PROVIDER = "provider"
-    }
 
     private val secretKey: ByteArray = props.secret.toByteArray()
 
