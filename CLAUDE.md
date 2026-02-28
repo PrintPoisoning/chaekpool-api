@@ -31,6 +31,9 @@ docker compose --env-file .env.local up -d
 
 # 종료
 docker compose --env-file .env.local down
+
+# 종료 + 데이터 초기화 (볼륨 삭제)
+docker compose --env-file .env.local down -v
 ```
 
 ### 환경 변수
@@ -48,11 +51,13 @@ docker compose --env-file .env.local down
 io.chaekpool/
 ├── auth/                    # 인증/인가 (OAuth, JWT, Token)
 │   ├── annotation/          # @AccessUserId, @RefreshUserId, @AccessToken, @RefreshToken
+│   ├── dev/                 # 개발용 인증 (local/dev 전용)
+│   │   └── controller/      # DevAuthController (Dev Login)
 │   ├── dto/                 # AuthResponse
 │   ├── oauth2/              # Kakao OAuth 로그인
 │   │   ├── client/          # KakaoAuthClient, KakaoApiClient (Feign)
 │   │   ├── config/          # KakaoAuthProperties, OAuth2FeignConfig
-│   │   ├── controller/      # KakaoController (콜백, OAuth 토큰 갱신)
+│   │   ├── controller/      # KakaoController (인가 리다이렉트, 콜백, OAuth 토큰 갱신)
 │   │   ├── dto/             # KakaoAuthTokenResponse, KakaoAuthRefreshTokenResponse, KakaoApiAccountResponse 등
 │   │   ├── exception/       # ProviderNotFoundException
 │   │   ├── repository/      # ProviderAccountRepository (jOOQ)
@@ -96,6 +101,8 @@ src/test/kotlin/
 └── io/chaekpool/
     ├── support/                 # TestcontainersConfig (PostgreSQL, Valkey)
     ├── auth/
+    │   ├── dev/
+    │   │   └── controller/      # DevAuthControllerTest
     │   ├── oauth2/
     │   │   ├── dto/             # KakaoAuthTokenResponseTest (TC 통합 테스트)
     │   │   └── service/         # KakaoServiceTest
@@ -122,6 +129,7 @@ src/test/kotlin/
 - **Cache/Session**: Valkey 9.0.2 (Redis 호환) - RefreshToken, TokenBlacklist 저장
 - **Monitoring**: Prometheus + Loki + Jaeger (OpenTelemetry OTLP) + Grafana
 - **Profile**: `local` (Docker Compose), `dev` (서버 배포)
+- **API 문서**: springdoc-openapi (`local`/`dev`만 활성화, `persist-authorization: true`로 토큰 유지)
 
 ---
 
@@ -547,7 +555,7 @@ interface KakaoAuthClient {
 - Stateless Session (세션 없음)
 - CSRF, FormLogin, HttpBasic 비활성화
 - JWT 기반 인증
-- `/api/v1/auth/oauth2/*/callback`, `/api/v1/auth/token/refresh`, `/v3/api-docs/**`, `/swagger-ui/**` 공개, 나머지 인증 필요
+- `/api/v1/auth/oauth2/*/authorize`, `/api/v1/auth/oauth2/*/callback`, `/api/v1/auth/token/refresh`, `/api/v1/auth/dev/**`, `/v3/api-docs/**`, `/swagger-ui/**` 공개, 나머지 인증 필요
 
 **필터 체인**
 ```
