@@ -48,7 +48,7 @@ class GlobalExceptionHandler(
         buildErrorResponse(
             status = HttpStatus.NOT_FOUND,
             code = "NOT_FOUND",
-            message = "리소스를 찾을 수 없습니다."
+            message = "리소스를 찾을 수 없습니다"
         )
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException::class)
