@@ -6,6 +6,9 @@ import io.chaekpool.auth.oauth2.service.KakaoService
 import io.chaekpool.auth.token.dto.TokenPair
 import io.chaekpool.auth.token.provider.CookieProvider
 import io.micrometer.observation.annotation.Observed
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.http.HttpHeaders.SET_COOKIE
 import org.springframework.http.ResponseEntity
@@ -15,15 +18,23 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
+import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse
 
 @RestController
 @RequestMapping("/api/v1/auth/oauth2/kakao")
 @Observed(name = "auth.oauth2.kakao")
+@Tag(name = "OAuth2", description = "OAuth2 인증 API")
 class KakaoController(
     private val kakaoService: KakaoService,
     private val cookieProvider: CookieProvider
 ) {
 
+    @Operation(
+        summary = "카카오 OAuth 로그인",
+        description = "카카오 인가 코드로 OAuth 인증을 수행하고 JWT 토큰 쌍을 발급합니다",
+        security = []
+    )
+    @SwaggerApiResponse(responseCode = "200", description = "로그인 성공")
     @GetMapping("/callback")
     fun kakaoLogin(
         @RequestParam code: String,
@@ -37,6 +48,13 @@ class KakaoController(
         return ResponseEntity.ok(TokenResponse(tokenPair))
     }
 
+    @Operation(
+        summary = "카카오 OAuth 토큰 갱신",
+        description = "저장된 카카오 refresh token으로 카카오 OAuth 토큰을 갱신합니다",
+        security = [SecurityRequirement(name = "bearerAuth")]
+    )
+    @SwaggerApiResponse(responseCode = "204", description = "토큰 갱신 성공")
+    @SwaggerApiResponse(responseCode = "401", description = "인증 실패")
     @PostMapping("/refresh")
     fun refreshOAuthTokens(
         @AccessUserId userId: UUID

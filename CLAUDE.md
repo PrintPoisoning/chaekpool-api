@@ -68,8 +68,8 @@ io.chaekpool/
 │       ├── repository/      # RefreshTokenRepository, TokenBlacklistRepository
 │       └── service/         # TokenService, TokenManager, BlacklistManager
 ├── common/                  # 공통 기능
-│   ├── config/              # WebSecurityConfig, CorsProperties, MetricsConfig, JacksonConfig
-│   ├── controller/          # CommonController (robots.txt, healthcheck)
+│   ├── config/              # WebSecurityConfig, CorsProperties, MetricsConfig, JacksonConfig, OpenApiConfig, ApiResponseOperationCustomizer
+│   ├── controller/          # CommonController (robots.txt)
 │   ├── dto/                 # ErrorResponse, UserMetadata
 │   ├── exception/           # ServiceException 계층, ErrorCodeAccessDeniedException, ErrorCodeBadCredentialsException
 │   │   ├── internal/        # BadRequest, NotFound, Forbidden, Conflict, Unauthorized, InternalServerError
@@ -104,6 +104,7 @@ src/test/kotlin/
     │       └── service/         # TokenServiceTest, BlacklistManagerTest
     ├── common/
     │   ├── filter/              # AccessLogFilterTest, UserMetadataFilterTest, UserMetadataContextTest
+    │   ├── logger/              # SingleLineFeignLoggerTest
     │   ├── provider/            # CryptoProviderTest
     │   └── util/                # AssertionExtensionTest, UserMetadataExtractorTest
     ├── user/
@@ -541,7 +542,7 @@ interface KakaoAuthClient {
 - Stateless Session (세션 없음)
 - CSRF, FormLogin, HttpBasic 비활성화
 - JWT 기반 인증
-- `/api/v1/auth/oauth2/*/callback`, `/api/v1/auth/token/refresh` 공개, 나머지 인증 필요
+- `/api/v1/auth/oauth2/*/callback`, `/api/v1/auth/token/refresh`, `/v3/api-docs/**`, `/swagger-ui/**` 공개, 나머지 인증 필요
 
 **필터 체인**
 ```
@@ -775,7 +776,7 @@ val uaJavaVersion = "1.6.1"
 val kotestVersion = "6.1.0"
 val mockkVersion = "1.14.9"
 val springmockkVersion = "5.0.1"
-val restdocsApiSpecVersion = "0.19.4"
+val springdocVersion = "3.0.1"
 ```
 
 **단, plugins 블록은 하드코딩**
@@ -785,6 +786,5 @@ plugins {
     kotlin("plugin.spring") version "2.3.10"
     id("org.springframework.boot") version "4.0.2"
     id("io.spring.dependency-management") version "1.1.7"
-    id("com.epages.restdocs-api-spec") version "0.19.4"
 }
 ```
