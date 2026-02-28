@@ -28,6 +28,10 @@ spring:
           default:
             loggerLevel: BASIC
 
+springdoc:
+  api-docs:
+    enabled: true
+
 auth:
   cookie:
     secure: true

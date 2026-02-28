@@ -111,6 +111,7 @@ springdoc:
     path: /swagger-ui.html
     tags-sorter: alpha
     operations-sorter: alpha
+    persist-authorization: true
   default-consumes-media-type: application/json
   default-produces-media-type: application/json
 
