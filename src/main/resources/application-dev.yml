@@ -40,6 +40,7 @@ logging:
     org.springframework.web: INFO
     org.springframework.security: INFO
     io.chaekpool: INFO
+    io.chaekpool.common.logger: DEBUG
     org.jooq: INFO
     org.jooq.tools.LoggerListener: DEBUG
 
