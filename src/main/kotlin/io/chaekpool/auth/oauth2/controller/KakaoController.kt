@@ -2,6 +2,7 @@ package io.chaekpool.auth.oauth2.controller
 
 import io.chaekpool.auth.annotation.AccessUserId
 import io.chaekpool.auth.dto.TokenResponse
+import io.chaekpool.auth.oauth2.config.KakaoAuthProperties
 import io.chaekpool.auth.oauth2.service.KakaoService
 import io.chaekpool.auth.token.dto.TokenPair
 import io.chaekpool.auth.token.provider.CookieProvider
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.util.UriComponentsBuilder
 import java.util.UUID
 import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse
 
@@ -26,8 +28,28 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse
 @Tag(name = "OAuth2", description = "OAuth2 인증 API")
 class KakaoController(
     private val kakaoService: KakaoService,
-    private val cookieProvider: CookieProvider
+    private val cookieProvider: CookieProvider,
+    private val kakaoAuthProperties: KakaoAuthProperties
 ) {
+
+    @Operation(
+        summary = "카카오 로그인 페이지 이동",
+        description = "카카오 로그인 페이지로 리다이렉트합니다. 브라우저에서 직접 호출하세요",
+        security = []
+    )
+    @SwaggerApiResponse(responseCode = "302", description = "카카오 로그인 페이지로 리다이렉트")
+    @GetMapping("/authorize")
+    fun authorize(): ResponseEntity<Unit> {
+        val authorizeUri = UriComponentsBuilder
+            .fromUriString("https://kauth.kakao.com/oauth/authorize")
+            .queryParam("client_id", kakaoAuthProperties.clientId)
+            .queryParam("redirect_uri", kakaoAuthProperties.redirectUri)
+            .queryParam("response_type", "code")
+            .build()
+            .toUri()
+
+        return ResponseEntity.status(302).location(authorizeUri).build()
+    }
 
     @Operation(
         summary = "카카오 OAuth 로그인",
