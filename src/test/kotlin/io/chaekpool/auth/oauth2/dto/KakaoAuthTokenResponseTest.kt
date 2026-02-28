@@ -1,6 +1,7 @@
 package io.chaekpool.auth.oauth2.dto
 
 import io.chaekpool.auth.oauth2.repository.ProviderAccountRepository
+import io.chaekpool.common.util.UUIDv7
 import io.chaekpool.support.TestcontainersConfig
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
@@ -93,7 +94,7 @@ class KakaoAuthTokenResponseTest(
         )
 
         When("provider_accounts에 JSONB로 저장 후 조회하면") {
-            val userId = UUID.randomUUID()
+            val userId = UUIDv7.generate()
             dsl.execute("INSERT INTO users (id) VALUES (?)", userId)
             val providerId = dsl.fetchOne(
                 "SELECT id FROM auth_providers WHERE provider_name = 'KAKAO'"
@@ -102,7 +103,7 @@ class KakaoAuthTokenResponseTest(
             providerAccountRepository.saveProviderAccount(
                 userId = userId,
                 providerId = providerId,
-                accountId = "test-account-id-${UUID.randomUUID()}",
+                accountId = "test-account-id-${UUIDv7.generate()}",
                 accountRegistry = KakaoApiAccountResponse(
                     id = 12345L,
                     connectedAt = null,

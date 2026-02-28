@@ -9,6 +9,7 @@ import io.chaekpool.auth.token.config.JwtProperties
 import io.chaekpool.auth.token.exception.InvalidTokenException
 import io.chaekpool.auth.token.exception.MissingClaimException
 import io.chaekpool.auth.token.exception.TokenExpiredException
+import io.chaekpool.common.util.UUIDv7
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.BehaviorSpec
@@ -31,7 +32,7 @@ class JwtProviderTest : BehaviorSpec({
     val jwtProvider = JwtProvider(testJwtProperties)
 
     Given("createAccessToken을 호출했을 때") {
-        val userId = UUID.randomUUID()
+        val userId = UUIDv7.generate()
 
         When("유효한 userId를 전달하면") {
             val token = jwtProvider.createAccessToken(userId)
@@ -61,7 +62,7 @@ class JwtProviderTest : BehaviorSpec({
     }
 
     Given("createRefreshToken을 호출했을 때") {
-        val userId = UUID.randomUUID()
+        val userId = UUIDv7.generate()
         val provider = "KAKAO"
 
         When("유효한 userId와 provider를 전달하면") {
@@ -88,7 +89,7 @@ class JwtProviderTest : BehaviorSpec({
     Given("assertToken을 호출했을 때") {
         When("유효한 토큰을 전달하면") {
             Then("예외가 발생하지 않는다") {
-                val userId = UUID.randomUUID()
+                val userId = UUIDv7.generate()
                 val token = jwtProvider.createAccessToken(userId)
 
                 jwtProvider.assertToken(token)
@@ -100,19 +101,21 @@ class JwtProviderTest : BehaviorSpec({
                 val exception = shouldThrow<InvalidTokenException> {
                     jwtProvider.assertToken("invalid.token.format")
                 }
+                exception.errorCode shouldBe "INVALID_TOKEN"
                 exception.message shouldContain "Malformed JWT"
             }
         }
 
         When("서명이 변조된 토큰을 전달하면") {
             Then("InvalidTokenException이 발생한다") {
-                val userId = UUID.randomUUID()
+                val userId = UUIDv7.generate()
                 val validToken = jwtProvider.createAccessToken(userId)
                 val tamperedToken = validToken.substring(0, validToken.length - 5) + "XXXXX"
 
                 val exception = shouldThrow<InvalidTokenException> {
                     jwtProvider.assertToken(tamperedToken)
                 }
+                exception.errorCode shouldBe "INVALID_TOKEN"
                 exception.message shouldContain "signature verification failed"
             }
         }
@@ -125,7 +128,7 @@ class JwtProviderTest : BehaviorSpec({
                     refreshTokenValiditySeconds = testJwtProperties.refreshTokenValiditySeconds
                 )
                 val expiredJwtProvider = JwtProvider(expiredJwtProperties)
-                val userId = UUID.randomUUID()
+                val userId = UUIDv7.generate()
                 val expiredToken = expiredJwtProvider.createAccessToken(userId)
 
                 shouldThrow<TokenExpiredException> {
@@ -146,7 +149,7 @@ class JwtProviderTest : BehaviorSpec({
             Then("MissingClaimException이 발생한다") {
                 // exp 없는 JWT 수동 생성
                 val claims = JWTClaimsSet.Builder()
-                    .subject(UUID.randomUUID().toString())
+                    .subject(UUIDv7.generate().toString())
                     .issueTime(Date.from(Instant.now()))
                     // exp 생략
                     .build()
@@ -158,6 +161,7 @@ class JwtProviderTest : BehaviorSpec({
                 val exception = shouldThrow<MissingClaimException> {
                     jwtProvider.assertToken(token)
                 }
+                exception.errorCode shouldBe "MISSING_CLAIM"
                 exception.message shouldContain "JWT has no exp"
             }
         }
@@ -166,7 +170,7 @@ class JwtProviderTest : BehaviorSpec({
     Given("getUserId를 호출했을 때") {
         When("유효한 토큰을 전달하면") {
             Then("올바른 userId를 반환한다") {
-                val userId = UUID.randomUUID()
+                val userId = UUIDv7.generate()
                 val token = jwtProvider.createAccessToken(userId)
 
                 val extractedUserId = jwtProvider.getUserId(token)
@@ -186,7 +190,7 @@ class JwtProviderTest : BehaviorSpec({
     Given("getExpirationTime을 호출했을 때") {
         When("유효한 accessToken을 전달하면") {
             Then("남은 만료 시간(초)을 반환한다") {
-                val userId = UUID.randomUUID()
+                val userId = UUIDv7.generate()
                 val token = jwtProvider.createAccessToken(userId)
 
                 val expirationTime = jwtProvider.getExpiresIn(token)
@@ -203,7 +207,7 @@ class JwtProviderTest : BehaviorSpec({
                     refreshTokenValiditySeconds = testJwtProperties.refreshTokenValiditySeconds
                 )
                 val expiredJwtProvider = JwtProvider(expiredJwtProperties)
-                val userId = UUID.randomUUID()
+                val userId = UUIDv7.generate()
                 val expiredToken = expiredJwtProvider.createAccessToken(userId)
 
                 val expirationTime = jwtProvider.getExpiresIn(expiredToken)
@@ -215,7 +219,7 @@ class JwtProviderTest : BehaviorSpec({
     Given("getJti를 호출했을 때") {
         When("유효한 토큰을 전달하면") {
             Then("JTI를 반환한다") {
-                val userId = UUID.randomUUID()
+                val userId = UUIDv7.generate()
                 val token = jwtProvider.createAccessToken(userId)
 
                 val jti = jwtProvider.getJti(token)
@@ -227,7 +231,7 @@ class JwtProviderTest : BehaviorSpec({
         When("jti가 없는 토큰을 전달하면") {
             Then("MissingClaimException이 발생한다") {
                 val claims = JWTClaimsSet.Builder()
-                    .subject(UUID.randomUUID().toString())
+                    .subject(UUIDv7.generate().toString())
                     .issueTime(Date.from(Instant.now()))
                     .expirationTime(Date.from(Instant.now().plusSeconds(900)))
                     .build()
@@ -239,6 +243,7 @@ class JwtProviderTest : BehaviorSpec({
                 val exception = shouldThrow<MissingClaimException> {
                     jwtProvider.getJti(token)
                 }
+                exception.errorCode shouldBe "MISSING_CLAIM"
                 exception.message shouldContain "JWT has no jti"
             }
         }
@@ -247,7 +252,7 @@ class JwtProviderTest : BehaviorSpec({
     Given("getProvider를 호출했을 때") {
         When("provider claim이 있는 refresh token을 전달하면") {
             Then("provider 값을 반환한다") {
-                val userId = UUID.randomUUID()
+                val userId = UUIDv7.generate()
                 val token = jwtProvider.createRefreshToken(userId, "KAKAO")
 
                 val provider = jwtProvider.getProvider(token)
@@ -257,7 +262,7 @@ class JwtProviderTest : BehaviorSpec({
 
         When("provider claim이 없는 토큰을 전달하면") {
             Then("null을 반환한다") {
-                val userId = UUID.randomUUID()
+                val userId = UUIDv7.generate()
                 val token = jwtProvider.createAccessToken(userId)
 
                 val provider = jwtProvider.getProvider(token)

@@ -12,6 +12,7 @@ import io.chaekpool.auth.oauth2.repository.AuthProviderRepository
 import io.chaekpool.auth.oauth2.repository.ProviderAccountRepository
 import io.chaekpool.auth.token.dto.TokenPair
 import io.chaekpool.auth.token.service.TokenManager
+import io.chaekpool.common.util.UUIDv7
 import io.chaekpool.generated.jooq.tables.pojos.AuthProviders
 import io.chaekpool.generated.jooq.tables.pojos.ProviderAccounts
 import io.chaekpool.generated.jooq.tables.pojos.Users
@@ -26,7 +27,6 @@ import io.mockk.runs
 import io.mockk.verify
 import org.jooq.JSONB
 import tools.jackson.databind.json.JsonMapper
-import java.util.UUID
 
 class KakaoServiceTest : BehaviorSpec({
 
@@ -69,8 +69,8 @@ class KakaoServiceTest : BehaviorSpec({
         When("authenticate를 호출하면") {
             Then("새 사용자와 provider account를 생성하고 토큰 쌍을 반환한다") {
                 val code = "auth-code"
-                val providerId = UUID.randomUUID()
-                val newUserId = UUID.randomUUID()
+                val providerId = UUIDv7.generate()
+                val newUserId = UUIDv7.generate()
                 val kakaoId = 12345L
                 val kakaoToken = KakaoAuthTokenResponse(
                     tokenType = "bearer",
@@ -125,8 +125,8 @@ class KakaoServiceTest : BehaviorSpec({
         When("authenticate를 호출하면") {
             Then("기존 provider account의 auth registry를 갱신하고 토큰 쌍을 반환한다") {
                 val code = "auth-code"
-                val providerId = UUID.randomUUID()
-                val existingUserId = UUID.randomUUID()
+                val providerId = UUIDv7.generate()
+                val existingUserId = UUIDv7.generate()
                 val kakaoId = 67890L
                 val kakaoToken = KakaoAuthTokenResponse(
                     tokenType = "bearer",
@@ -180,16 +180,18 @@ class KakaoServiceTest : BehaviorSpec({
             Then("ProviderNotFoundException이 발생한다") {
                 every { authProviderRepository.findByProviderName(AuthProvider.KAKAO) } returns null
 
-                shouldThrow<ProviderNotFoundException> {
+                val exception = shouldThrow<ProviderNotFoundException> {
                     kakaoService.getKakaoProviderId()
                 }
+                exception.errorCode shouldBe "PROVIDER_NOT_FOUND"
+                exception.message shouldBe "OAuth 제공자를 찾을 수 없습니다: KAKAO"
             }
         }
     }
 
     Given("카카오 OAuth 토큰 갱신 시") {
-        val userId = UUID.randomUUID()
-        val providerId = UUID.randomUUID()
+        val userId = UUIDv7.generate()
+        val providerId = UUIDv7.generate()
 
         val currentAuth = KakaoAuthTokenResponse(
             tokenType = "bearer",
@@ -307,9 +309,11 @@ class KakaoServiceTest : BehaviorSpec({
                 )
                 every { providerAccountRepository.findByUserIdAndProviderId(userId, providerId) } returns null
 
-                shouldThrow<ProviderNotFoundException> {
+                val exception = shouldThrow<ProviderNotFoundException> {
                     kakaoService.refreshOAuthTokens(userId)
                 }
+                exception.errorCode shouldBe "PROVIDER_NOT_FOUND"
+                exception.message shouldBe "OAuth 제공자를 찾을 수 없습니다: KAKAO"
             }
         }
     }
