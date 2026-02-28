@@ -12,6 +12,8 @@ import io.chaekpool.auth.oauth2.repository.AuthProviderRepository
 import io.chaekpool.auth.oauth2.repository.ProviderAccountRepository
 import io.chaekpool.auth.token.dto.TokenPair
 import io.chaekpool.auth.token.service.TokenManager
+import io.chaekpool.common.exception.external.ExternalBadRequestException
+import io.chaekpool.common.exception.internal.NotFoundException
 import io.chaekpool.common.util.UUIDv7
 import io.chaekpool.generated.jooq.tables.pojos.AuthProviders
 import io.chaekpool.generated.jooq.tables.pojos.ProviderAccounts
@@ -20,12 +22,14 @@ import io.chaekpool.user.repository.UserRepository
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.verify
 import org.jooq.JSONB
+import org.springframework.http.HttpStatus
 import tools.jackson.databind.json.JsonMapper
 
 class KakaoServiceTest : BehaviorSpec({
@@ -66,12 +70,13 @@ class KakaoServiceTest : BehaviorSpec({
     }
 
     Given("신규 카카오 사용자가 인증할 때") {
+        val code = "auth-code"
+        val kakaoId = 12345L
+
         When("authenticate를 호출하면") {
             Then("새 사용자와 provider account를 생성하고 토큰 쌍을 반환한다") {
-                val code = "auth-code"
                 val providerId = UUIDv7.generate()
                 val newUserId = UUIDv7.generate()
-                val kakaoId = 12345L
                 val kakaoToken = KakaoAuthTokenResponse(
                     tokenType = "bearer",
                     accessToken = "kakao-access-token",
@@ -122,12 +127,13 @@ class KakaoServiceTest : BehaviorSpec({
     }
 
     Given("기존 카카오 사용자가 인증할 때") {
+        val code = "auth-code"
+        val kakaoId = 67890L
+
         When("authenticate를 호출하면") {
             Then("기존 provider account의 auth registry를 갱신하고 토큰 쌍을 반환한다") {
-                val code = "auth-code"
                 val providerId = UUIDv7.generate()
                 val existingUserId = UUIDv7.generate()
-                val kakaoId = 67890L
                 val kakaoToken = KakaoAuthTokenResponse(
                     tokenType = "bearer",
                     accessToken = "kakao-access-token",
@@ -183,6 +189,8 @@ class KakaoServiceTest : BehaviorSpec({
                 val exception = shouldThrow<ProviderNotFoundException> {
                     kakaoService.getKakaoProviderId()
                 }
+                exception.shouldBeInstanceOf<NotFoundException>()
+                exception.httpStatus shouldBe HttpStatus.NOT_FOUND
                 exception.errorCode shouldBe "PROVIDER_NOT_FOUND"
                 exception.message shouldBe "OAuth 제공자를 찾을 수 없습니다: KAKAO"
             }
@@ -192,7 +200,6 @@ class KakaoServiceTest : BehaviorSpec({
     Given("카카오 OAuth 토큰 갱신 시") {
         val userId = UUIDv7.generate()
         val providerId = UUIDv7.generate()
-
         val currentAuth = KakaoAuthTokenResponse(
             tokenType = "bearer",
             accessToken = "old-kakao-access",
@@ -202,7 +209,6 @@ class KakaoServiceTest : BehaviorSpec({
             refreshTokenExpiresIn = 604800,
             scope = "profile"
         )
-
         val providerAccount = ProviderAccounts(
             userId = userId,
             providerId = providerId,
@@ -219,7 +225,6 @@ class KakaoServiceTest : BehaviorSpec({
                     refreshToken = "new-kakao-refresh",
                     refreshTokenExpiresIn = 5184000
                 )
-
                 val kakaoAccount = KakaoApiAccountResponse(
                     id = 12345L,
                     connectedAt = null,
@@ -231,10 +236,7 @@ class KakaoServiceTest : BehaviorSpec({
                     id = providerId, providerName = AuthProvider.KAKAO, description = "카카오 소셜 로그인"
                 )
                 every {
-                    providerAccountRepository.findByUserIdAndProviderId(
-                        userId,
-                        providerId
-                    )
+                    providerAccountRepository.findByUserIdAndProviderId(userId, providerId)
                 } returns providerAccount
                 every { jsonMapper.readValue("{}", KakaoAuthTokenResponse::class.java) } returns currentAuth
                 every { kakaoAuthClient.postRefreshToken(any(), any(), any(), any()) } returns refreshedAuth
@@ -250,11 +252,7 @@ class KakaoServiceTest : BehaviorSpec({
                     })
                 }
                 verify(exactly = 1) {
-                    providerAccountRepository.updateAccountRegistry(
-                        userId,
-                        providerId,
-                        kakaoAccount
-                    )
+                    providerAccountRepository.updateAccountRegistry(userId, providerId, kakaoAccount)
                 }
             }
         }
@@ -268,7 +266,6 @@ class KakaoServiceTest : BehaviorSpec({
                     refreshToken = null,
                     refreshTokenExpiresIn = null
                 )
-
                 val kakaoAccount = KakaoApiAccountResponse(
                     id = 12345L,
                     connectedAt = null,
@@ -280,10 +277,7 @@ class KakaoServiceTest : BehaviorSpec({
                     id = providerId, providerName = AuthProvider.KAKAO, description = "카카오 소셜 로그인"
                 )
                 every {
-                    providerAccountRepository.findByUserIdAndProviderId(
-                        userId,
-                        providerId
-                    )
+                    providerAccountRepository.findByUserIdAndProviderId(userId, providerId)
                 } returns providerAccount
                 every { jsonMapper.readValue("{}", KakaoAuthTokenResponse::class.java) } returns currentAuth
                 every { kakaoAuthClient.postRefreshToken(any(), any(), any(), any()) } returns refreshedAuth
@@ -312,8 +306,58 @@ class KakaoServiceTest : BehaviorSpec({
                 val exception = shouldThrow<ProviderNotFoundException> {
                     kakaoService.refreshOAuthTokens(userId)
                 }
+                exception.shouldBeInstanceOf<NotFoundException>()
+                exception.httpStatus shouldBe HttpStatus.NOT_FOUND
                 exception.errorCode shouldBe "PROVIDER_NOT_FOUND"
                 exception.message shouldBe "OAuth 제공자를 찾을 수 없습니다: KAKAO"
+            }
+        }
+    }
+
+    Given("카카오 토큰 교환 API 호출이 실패할 때") {
+        val code = "invalid-code"
+
+        When("authenticate를 호출하면") {
+            Then("ExternalBadRequestException이 발생한다") {
+                every {
+                    kakaoAuthClient.postOAuthToken(any(), any(), any(), any(), any())
+                } throws ExternalBadRequestException()
+
+                val exception = shouldThrow<ExternalBadRequestException> {
+                    kakaoService.authenticate(code)
+                }
+                exception.httpStatus shouldBe HttpStatus.BAD_REQUEST
+                exception.errorCode shouldBe "EXTERNAL_BAD_REQUEST"
+                exception.message shouldBe "외부 API 요청이 잘못되었습니다"
+            }
+        }
+    }
+
+    Given("카카오 사용자 정보 조회 API 호출이 실패할 때") {
+        val code = "auth-code"
+        val kakaoToken = KakaoAuthTokenResponse(
+            tokenType = "bearer",
+            accessToken = "kakao-access-token",
+            idToken = null,
+            expiresIn = 3600,
+            refreshToken = "kakao-refresh-token",
+            refreshTokenExpiresIn = 604800,
+            scope = null
+        )
+
+        When("authenticate를 호출하면") {
+            Then("ExternalBadRequestException이 발생한다") {
+                every {
+                    kakaoAuthClient.postOAuthToken(any(), any(), any(), any(), any())
+                } returns kakaoToken
+                every { kakaoApiClient.getAccount(any()) } throws ExternalBadRequestException()
+
+                val exception = shouldThrow<ExternalBadRequestException> {
+                    kakaoService.authenticate(code)
+                }
+                exception.httpStatus shouldBe HttpStatus.BAD_REQUEST
+                exception.errorCode shouldBe "EXTERNAL_BAD_REQUEST"
+                exception.message shouldBe "외부 API 요청이 잘못되었습니다"
             }
         }
     }

@@ -100,13 +100,15 @@ src/test/kotlin/
     │   │   ├── dto/             # KakaoAuthTokenResponseTest (TC 통합 테스트)
     │   │   └── service/         # KakaoServiceTest
     │   └── token/
+    │       ├── filter/          # JwtAuthenticationFilterTest
     │       ├── provider/        # JwtProviderTest, CookieProviderTest
     │       └── service/         # TokenServiceTest, BlacklistManagerTest
     ├── common/
     │   ├── filter/              # AccessLogFilterTest, UserMetadataFilterTest, UserMetadataContextTest
+    │   ├── handler/             # GlobalExceptionHandlerTest
     │   ├── logger/              # SingleLineFeignLoggerTest
     │   ├── provider/            # CryptoProviderTest
-    │   └── util/                # AssertionExtensionTest, UserMetadataExtractorTest
+    │   └── util/                # AssertionExtensionTest, UserMetadataExtractorTest, MaskingUtilTest, UUIDv7Test
     ├── user/
     │   └── service/             # UserServiceTest
     └── ChaekpoolApplicationTests.kt  # Spring Context 로드 테스트
@@ -265,11 +267,14 @@ ServiceException (추상)
   - ❌ "Invalid JWT token." (X)
 
 **테스트 작성 규칙**
-- Exception 테스트 시 반드시 `errorCode`와 `message` 모두 검증
+- 테스트 파일 명명: `???Test.kt` 형식 (JUnit 스타일 유지)
+- Exception 테스트 시 **타입 → httpStatus → errorCode → message** 순서로 반드시 모두 검증
 ```kotlin
 val exception = shouldThrow<UserNotFoundException> {
     userService.getUser(userId)
 }
+exception.shouldBeInstanceOf<NotFoundException>()
+exception.httpStatus shouldBe HttpStatus.NOT_FOUND
 exception.errorCode shouldBe "USER_NOT_FOUND"
 exception.message shouldBe "사용자를 찾을 수 없습니다"
 ```
@@ -571,29 +576,17 @@ class UserServiceTest : BehaviorSpec({
         userService = UserService(userRepository)
     }
 
-    Given("사용자 ID가 주어졌을 때") {
-        // Arrange: 테스트 데이터 및 Mock 설정
-        val userId = UUIDv7.generate()
-        val userPojo = Users(
-            id = userId,
-            email = "test@example.com",
-            username = "testuser",
-            profileImageUrl = "https://example.com/profile.jpg",
-            visibility = UserVisibilityType.PUBLIC,
-            status = UserStatusType.ACTIVE
-        )
-        every { userRepository.findById(userId) } returns userPojo
+    Given("존재하는 userId가 주어졌을 때") {
+        val userId = UUIDv7.generate()   // 순수 데이터: Given에 배치
 
         When("getUser를 호출하면") {
-            // Act: 실제 메서드 실행
-            val result = userService.getUser(userId)
-
             Then("사용자 정보를 반환한다") {
-                // Assert: 결과 검증
+                // Mock 설정 + 실행 + 검증: Then에 배치
+                every { userRepository.findById(userId) } returns Users(...)
+
+                val result = userService.getUser(userId)
+
                 result.email shouldBe "test@example.com"
-                result.username shouldBe "testuser"
-                result.visibility shouldBe "PUBLIC"
-                result.status shouldBe "ACTIVE"
             }
         }
     }
@@ -601,28 +594,28 @@ class UserServiceTest : BehaviorSpec({
 ```
 
 **BDD Pattern (Best Practice)**:
-- **Given**: Arrange - 테스트 데이터 준비, Mock 설정 (`every`)
-- **When**: Act - 실제 메서드 호출, 결과 저장
-- **Then**: Assert - 결과 검증 (`shouldBe`, `verify`)
+- **Given**: 순수 테스트 데이터 준비 (`val token`, `val userId`, `MockHttpServletRequest` 등)
+- **When → Then**: Mock 설정(`every`) + 실행(Act) + 검증(Assert)
 
 **Reference**:
 - Official: [Kotest Testing Styles](https://kotest.io/docs/framework/testing-styles.html)
 - Tutorial: [Introduction to Kotest | Baeldung](https://www.baeldung.com/kotlin/kotest)
 
-**BehaviorSpec 구조 (Given-When-Then)** - Arrange-Act-Assert 패턴
+**BehaviorSpec 구조 (Given-When-Then)** - 블록별 배치 규칙
 
 ```kotlin
 Given("테스트 전제조건") {
-    // Arrange: 테스트 데이터 준비, Mock 설정
-    val testData = ...
-    every { mock.method() } returns value
+    // 순수 데이터만 (lateinit mock에 의존하지 않는 값)
+    val token = "test-token"
+    val userId = UUIDv7.generate()
 
     When("메서드를 호출하면") {
-        // Act: 실제 메서드 실행
-        val result = service.method()
-
         Then("결과를 검증한다") {
-            // Assert: 결과 검증, verify 호출
+            // Mock 설정 (every) + 실행 (Act) + 검증 (Assert)
+            every { mock.method() } returns value
+
+            val result = service.method()
+
             result shouldBe expected
             verify { mock.method() }
         }
@@ -630,10 +623,10 @@ Given("테스트 전제조건") {
 }
 ```
 
-**각 블록의 역할**:
-- **Given**: Arrange - 테스트 데이터 준비, Mock 동작 정의 (`every`)
-- **When**: Act - 대상 메서드 호출, 결과 저장
-- **Then**: Assert - 결과 검증, Mock 호출 검증 (`verify`)
+**블록별 배치 규칙**:
+- **Given**: 순수 데이터 준비 - lateinit mock에 의존하지 않는 값 (`val`, DTO 생성 등)
+- **When → Then**: Mock 설정(`every`) + 실행(Act) + 검증(Assert, `verify`)
+- **⚠️ 주의**: `every { mock.method() }` 등 lateinit mock 의존 코드는 반드시 Then 내부에 배치 (Given/When에서는 `beforeTest` 실행 전이므로 초기화 안 됨)
 
 **MockK 1.14.9 (Mocking 규칙)**
 ```kotlin
@@ -643,11 +636,10 @@ beforeTest {
     service = Service(repository)
 }
 
-// Mock 설정 (Given 블록에서)
+// Mock 설정 + 실행 + 검증 (Then 블록에서)
 every { repository.findById(1L) } returns user
-every { repository.save(any()) } just runs
-
-// 검증 (Then 블록에서)
+val result = service.getUser(1L)
+result shouldBe expected
 verify(exactly = 1) { repository.findById(1L) }
 ```
 

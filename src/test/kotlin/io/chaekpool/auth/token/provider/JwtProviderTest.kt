@@ -9,6 +9,7 @@ import io.chaekpool.auth.token.config.JwtProperties
 import io.chaekpool.auth.token.exception.InvalidTokenException
 import io.chaekpool.auth.token.exception.MissingClaimException
 import io.chaekpool.auth.token.exception.TokenExpiredException
+import io.chaekpool.common.exception.internal.UnauthorizedException
 import io.chaekpool.common.util.UUIDv7
 import io.kotest.assertions.throwables.shouldNotThrowAny
 import io.kotest.assertions.throwables.shouldThrow
@@ -18,6 +19,8 @@ import io.kotest.matchers.longs.shouldBeLessThan
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.types.shouldBeInstanceOf
+import org.springframework.http.HttpStatus
 import java.time.Instant
 import java.util.Date
 import java.util.UUID
@@ -101,6 +104,8 @@ class JwtProviderTest : BehaviorSpec({
                 val exception = shouldThrow<InvalidTokenException> {
                     jwtProvider.assertToken("invalid.token.format")
                 }
+                exception.shouldBeInstanceOf<UnauthorizedException>()
+                exception.httpStatus shouldBe HttpStatus.UNAUTHORIZED
                 exception.errorCode shouldBe "INVALID_TOKEN"
                 exception.message shouldContain "Malformed JWT"
             }
@@ -115,6 +120,8 @@ class JwtProviderTest : BehaviorSpec({
                 val exception = shouldThrow<InvalidTokenException> {
                     jwtProvider.assertToken(tamperedToken)
                 }
+                exception.shouldBeInstanceOf<UnauthorizedException>()
+                exception.httpStatus shouldBe HttpStatus.UNAUTHORIZED
                 exception.errorCode shouldBe "INVALID_TOKEN"
                 exception.message shouldContain "signature verification failed"
             }
@@ -131,17 +138,24 @@ class JwtProviderTest : BehaviorSpec({
                 val userId = UUIDv7.generate()
                 val expiredToken = expiredJwtProvider.createAccessToken(userId)
 
-                shouldThrow<TokenExpiredException> {
+                val exception = shouldThrow<TokenExpiredException> {
                     jwtProvider.assertToken(expiredToken)
                 }
+                exception.shouldBeInstanceOf<UnauthorizedException>()
+                exception.httpStatus shouldBe HttpStatus.UNAUTHORIZED
+                exception.errorCode shouldBe "TOKEN_EXPIRED"
+                exception.message shouldBe "JWT token expired"
             }
         }
 
         When("빈 문자열을 전달하면") {
             Then("InvalidTokenException이 발생한다") {
-                shouldThrow<InvalidTokenException> {
+                val exception = shouldThrow<InvalidTokenException> {
                     jwtProvider.assertToken("")
                 }
+                exception.shouldBeInstanceOf<UnauthorizedException>()
+                exception.httpStatus shouldBe HttpStatus.UNAUTHORIZED
+                exception.errorCode shouldBe "INVALID_TOKEN"
             }
         }
 
@@ -161,6 +175,8 @@ class JwtProviderTest : BehaviorSpec({
                 val exception = shouldThrow<MissingClaimException> {
                     jwtProvider.assertToken(token)
                 }
+                exception.shouldBeInstanceOf<UnauthorizedException>()
+                exception.httpStatus shouldBe HttpStatus.UNAUTHORIZED
                 exception.errorCode shouldBe "MISSING_CLAIM"
                 exception.message shouldContain "JWT has no exp"
             }
@@ -243,6 +259,8 @@ class JwtProviderTest : BehaviorSpec({
                 val exception = shouldThrow<MissingClaimException> {
                     jwtProvider.getJti(token)
                 }
+                exception.shouldBeInstanceOf<UnauthorizedException>()
+                exception.httpStatus shouldBe HttpStatus.UNAUTHORIZED
                 exception.errorCode shouldBe "MISSING_CLAIM"
                 exception.message shouldContain "JWT has no jti"
             }

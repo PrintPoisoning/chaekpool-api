@@ -1,5 +1,6 @@
 package io.chaekpool.user.service
 
+import io.chaekpool.common.exception.internal.NotFoundException
 import io.chaekpool.common.util.UUIDv7
 import io.chaekpool.generated.jooq.enums.UserStatusType
 import io.chaekpool.generated.jooq.enums.UserVisibilityType
@@ -9,8 +10,10 @@ import io.chaekpool.user.repository.UserRepository
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeInstanceOf
 import io.mockk.every
 import io.mockk.mockk
+import org.springframework.http.HttpStatus
 
 class UserServiceTest : BehaviorSpec({
 
@@ -23,9 +26,10 @@ class UserServiceTest : BehaviorSpec({
     }
 
     Given("존재하는 userId가 주어졌을 때") {
+        val userId = UUIDv7.generate()
+
         When("getUser를 호출하면") {
             Then("사용자 정보를 반환한다") {
-                val userId = UUIDv7.generate()
                 val userPojo = Users(
                     id = userId,
                     email = "test@example.com",
@@ -52,15 +56,17 @@ class UserServiceTest : BehaviorSpec({
     }
 
     Given("존재하지 않는 userId가 주어졌을 때") {
+        val userId = UUIDv7.generate()
+
         When("getUser를 호출하면") {
             Then("NotFoundException이 발생한다") {
-                val userId = UUIDv7.generate()
-
                 every { userRepository.findById(userId) } returns null
 
                 val exception = shouldThrow<UserNotFoundException> {
                     userService.getUser(userId)
                 }
+                exception.shouldBeInstanceOf<NotFoundException>()
+                exception.httpStatus shouldBe HttpStatus.NOT_FOUND
                 exception.errorCode shouldBe "USER_NOT_FOUND"
                 exception.message shouldBe "사용자를 찾을 수 없습니다"
             }
