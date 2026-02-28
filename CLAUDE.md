@@ -64,10 +64,11 @@ io.chaekpool/
 │       ├── entity/          # RefreshToken, TokenBlacklist (Redis)
 │       ├── exception/       # InvalidToken, TokenExpired, TokenBlacklisted 등
 │       ├── filter/          # JwtAuthenticationFilter
+│       ├── provider/        # JwtProvider, CookieProvider (service/에서 분리)
 │       ├── repository/      # RefreshTokenRepository, TokenBlacklistRepository
-│       └── service/         # TokenService, TokenManager, BlacklistManager, CookieService, JwtProvider
+│       └── service/         # TokenService, TokenManager, BlacklistManager
 ├── common/                  # 공통 기능
-│   ├── config/              # WebSecurityConfig, CorsProperties, MetricsConfig
+│   ├── config/              # WebSecurityConfig, CorsProperties, MetricsConfig, JacksonConfig
 │   ├── controller/          # CommonController (robots.txt, healthcheck)
 │   ├── dto/                 # ErrorResponse, UserMetadata
 │   ├── exception/           # ServiceException 계층, ErrorCodeAccessDeniedException, ErrorCodeBadCredentialsException
@@ -76,6 +77,8 @@ io.chaekpool/
 │   ├── filter/              # AccessLogFilter, UserMetadataFilter/Context
 │   ├── handler/             # GlobalExceptionHandler, ErrorCodeAccessDeniedHandler, ErrorCodeAuthenticationEntryPoint
 │   ├── logger/              # SingleLineFeignLogger
+│   ├── provider/            # CryptoProvider
+│   ├── serializer/          # EncryptedStringSerializer, EncryptedStringDeserializer (@Component + DI)
 │   └── util/                # AssertionExtension, UserMetadataExtractor
 └── user/                    # 사용자 관리
     ├── controller/          # UserController
@@ -96,9 +99,12 @@ src/test/kotlin/
     │   ├── oauth2/
     │   │   ├── dto/             # KakaoAuthTokenResponseTest (TC 통합 테스트)
     │   │   └── service/         # KakaoServiceTest
-    │   └── token/service/       # TokenServiceTest, JwtProviderTest, BlacklistManagerTest
+    │   └── token/
+    │       ├── provider/        # JwtProviderTest, CookieProviderTest
+    │       └── service/         # TokenServiceTest, BlacklistManagerTest
     ├── common/
     │   ├── filter/              # AccessLogFilterTest, UserMetadataFilterTest, UserMetadataContextTest
+    │   ├── provider/            # CryptoProviderTest
     │   └── util/                # AssertionExtensionTest, UserMetadataExtractorTest
     ├── user/
     │   └── service/             # UserServiceTest
