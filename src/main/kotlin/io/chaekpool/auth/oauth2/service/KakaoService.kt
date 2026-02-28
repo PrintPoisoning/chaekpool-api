@@ -59,6 +59,13 @@ class KakaoService(
         return tokenPair
     }
 
+    @Transactional(readOnly = true)
+    fun getKakaoProviderId(): UUID {
+        return authProviderRepository.findByProviderName(AuthProvider.KAKAO)
+            ?.id
+            .notNullOrThrow { ProviderNotFoundException(AuthProvider.KAKAO) }
+    }
+
     @Transactional
     fun refreshOAuthTokens(userId: UUID) {
         val providerId = getKakaoProviderId()
@@ -139,11 +146,5 @@ class KakaoService(
     ): UUID {
         providerAccountRepository.updateAuthRegistry(userId, providerId, kakaoAuthRegistry)
         return userId
-    }
-
-    fun getKakaoProviderId(): UUID {
-        return authProviderRepository.findByProviderName(AuthProvider.KAKAO)
-            ?.id
-            .notNullOrThrow { ProviderNotFoundException(AuthProvider.KAKAO) }
     }
 }
