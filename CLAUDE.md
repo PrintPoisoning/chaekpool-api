@@ -7,7 +7,7 @@
 **Tech Stack:**
 - Spring Boot 4.0.2 / Kotlin 2.3.10 / Java 25
 - Build: Gradle 9.3.1 (Kotlin DSL)
-- Database: PostgreSQL 18.2 + jOOQ 3.19
+- Database: PostgreSQL 18.2 + jOOQ 3.19.29
 - Cache: Valkey 9.0.2 (Redis)
 - Test: Kotest 6.1.0 + MockK 1.14.9 + Testcontainers 2.0.3
 
@@ -34,8 +34,10 @@ docker compose --env-file .env.local down
 ```
 
 ### 환경 변수
-- `.env.example` 참고하여 `.env.local` 생성
-- `.env.local`은 **절대 커밋 금지** (`.gitignore` 등록됨)
+- `.env.local` 파일 직접 참고 (프로젝트 루트에 위치)
+- `.env.local` 참고하여 환경 설정 (개발 환경이므로 민감정보 없음, 커밋 대상)
+- **프로덕션 환경**: 반드시 환경변수로 주입, 파일 커밋 금지
+- **주의**: .env.local 수정 후 민감정보 포함 여부 확인 필수
 
 ---
 
@@ -47,8 +49,6 @@ io.chaekpool/
 ├── auth/                    # 인증/인가 (OAuth, JWT, Token)
 │   ├── annotation/          # @AccessUserId, @RefreshUserId, @AccessToken, @RefreshToken
 │   ├── dto/                 # AuthResponse
-│   ├── exception/           # AuthException
-│   ├── handler/             # CustomAccessDeniedHandler, CustomAuthenticationEntryPoint
 │   ├── oauth2/              # Kakao OAuth 로그인
 │   │   ├── client/          # KakaoAuthClient, KakaoApiClient (Feign)
 │   │   ├── config/          # KakaoAuthProperties, OAuth2FeignConfig
@@ -70,16 +70,17 @@ io.chaekpool/
 │   ├── config/              # WebSecurityConfig, CorsProperties, MetricsConfig
 │   ├── controller/          # CommonController (robots.txt, healthcheck)
 │   ├── dto/                 # ErrorResponse, UserMetadata
-│   ├── exception/           # ServiceException 계층
+│   ├── exception/           # ServiceException 계층, ErrorCodeAccessDeniedException, ErrorCodeBadCredentialsException
 │   │   ├── internal/        # BadRequest, NotFound, Forbidden, Conflict, Unauthorized, InternalServerError
 │   │   └── external/        # ExternalServiceException
 │   ├── filter/              # AccessLogFilter, UserMetadataFilter/Context
-│   ├── handler/             # GlobalExceptionHandler
+│   ├── handler/             # GlobalExceptionHandler, ErrorCodeAccessDeniedHandler, ErrorCodeAuthenticationEntryPoint
 │   ├── logger/              # SingleLineFeignLogger
 │   └── util/                # AssertionExtension, UserMetadataExtractor
 └── user/                    # 사용자 관리
     ├── controller/          # UserController
     ├── dto/                 # UserResponse
+    ├── exception/           # UserNotFoundException
     ├── repository/          # UserRepository (jOOQ)
     └── service/             # UserService
 ```
@@ -95,15 +96,18 @@ src/test/kotlin/
     │   ├── oauth2/
     │   │   ├── dto/             # KakaoAuthTokenResponseTest (TC 통합 테스트)
     │   │   └── service/         # KakaoServiceTest
-    │   └── token/service/       # TokenServiceTest, JwtProviderTest
+    │   └── token/service/       # TokenServiceTest, JwtProviderTest, BlacklistManagerTest
     ├── common/
     │   ├── filter/              # AccessLogFilterTest, UserMetadataFilterTest, UserMetadataContextTest
     │   └── util/                # AssertionExtensionTest, UserMetadataExtractorTest
+    ├── user/
+    │   └── service/             # UserServiceTest
     └── ChaekpoolApplicationTests.kt  # Spring Context 로드 테스트
 ```
 
 ### 주요 기술 스택
 - **API 경로**: `/api/v1/...`
+- **ID generate**: UUID version 7 (시간 기반 + 랜덤) - postgreSQL `DEFAULT uuidv7()`, kotlin `UUIDv7.generate()`
 - **Database**: PostgreSQL 18.2 + jOOQ (Type-safe SQL)
 - **Migration**: Flyway 11.14 (`src/main/resources/db/migration`)
 - **Cache/Session**: Valkey 9.0.2 (Redis 호환) - RefreshToken, TokenBlacklist 저장
@@ -113,6 +117,47 @@ src/test/kotlin/
 ---
 
 ## Code Conventions
+
+### 0. 설계 원칙
+
+**KISS (Keep It Simple, Stupid)**
+- **단순함 우선**: 복잡한 아키텍처보다 명확하고 이해하기 쉬운 코드 작성
+- **과도한 추상화 지양**: 현재 필요한 기능에 집중, 미래 확장을 위한 과도한 설계 금지
+- **가독성 > 간결성**: 한 줄로 줄이는 것보다 의도가 명확한 여러 줄의 코드 선호
+- **적절한 수준**: 3번 반복되면 추상화 고려, 그 전까지는 중복 허용
+
+**SOLID 원칙**
+- **S**ingle Responsibility: 하나의 클래스/메서드는 하나의 책임만 가짐
+  ```kotlin
+  // ❌ Bad: 여러 책임
+  class UserService {
+      fun createUser() { ... }
+      fun sendEmail() { ... }  // 이메일은 별도 서비스로
+  }
+
+  // ✅ Good: 단일 책임
+  class UserService { fun createUser() }
+  class EmailService { fun sendEmail() }
+  ```
+
+- **O**pen/Closed: 확장에는 열려있고 수정에는 닫혀있음
+  ```kotlin
+  // 인터페이스로 확장 가능하게 설계
+  interface PaymentMethod { fun pay(amount: Long) }
+  class CreditCard : PaymentMethod { ... }
+  class BankTransfer : PaymentMethod { ... }
+  ```
+
+- **L**iskov Substitution: 하위 타입은 상위 타입으로 대체 가능해야 함
+- **I**nterface Segregation: 불필요한 메서드 의존 금지, 인터페이스 분리
+- **D**ependency Inversion: 구체 클래스가 아닌 인터페이스/추상화에 의존
+
+**원칙 적용 시 유의사항**:
+- 무조건적 적용 금지 - 현재 필요와 복잡도 고려
+- KISS와 SOLID 균형 유지 - 과도한 SOLID는 복잡도 증가
+- 실용주의: 작은 프로젝트는 간단하게, 큰 프로젝트는 견고하게
+
+---
 
 ### 1. 기본 원칙
 
@@ -146,7 +191,8 @@ data class UserResponse(
 @ConfigurationProperties(prefix = "auth.jwt")
 data class JwtProperties(
     val secret: String,
-    val accessTokenValiditySeconds: Long
+    val accessTokenValiditySeconds: Long,
+    val refreshTokenValiditySeconds: Long
 )  // ✅ data class + prefix
 ```
 
@@ -160,30 +206,65 @@ ServiceException (추상)
 ├── internal/
 │   ├── BadRequestException
 │   ├── NotFoundException
+│   │   ├── UserNotFoundException (user/exception/)
+│   │   └── ProviderNotFoundException (auth/oauth2/exception/)
 │   ├── ForbiddenException
 │   ├── ConflictException
 │   ├── UnauthorizedException
 │   └── InternalServerErrorException
 ├── external/
 │   └── ExternalServiceException
+│       ├── ExternalBadRequestException
+│       ├── ExternalForbiddenException
+│       └── ExternalUnauthorizedException
 └── auth/token/exception/
     ├── InvalidTokenException
-    ├── TokenExpiredException
-    ├── TokenBlacklistedException
-    ├── TokenNotFoundException
-    └── MissingClaimException
+    │   ├── MissingClaimException
+    │   ├── TokenExpiredException
+    │   └── TokenNotFoundException
+    └── TokenBlacklistedException
 ```
 
 **ErrorResponse 형식**
 ```json
 {
+  "trace_id": "64f643976895e486ca47ab3456e06f4b",
+  "span_id": "d99a14be3c3c3a5f",
   "status": 400,
-  "error": "Bad Request",
-  "message": "잘못된 요청입니다",
-  "error_code": "INVALID_INPUT",
-  "path": "/api/v1/users",
-  "timestamp": "2026-02-23T10:30:00.000Z"
+  "data": {
+    "code": "INVALID_INPUT",
+    "message": "잘못된 요청입니다"
+  }
 }
+```
+
+**참고**:
+- `trace_id`/`span_id`: OpenTelemetry 분산 추적용 식별자 (Jaeger 연동)
+- `status`: HTTP 상태 코드
+- `data`: 제네릭 래퍼 - 성공 시 실제 데이터, 실패 시 ErrorData
+- ErrorData 구조: `{ code: String, message: String? }`
+
+**구현 파일**:
+- `src/main/kotlin/io/chaekpool/common/dto/ApiResponse.kt`
+- `src/main/kotlin/io/chaekpool/common/dto/ErrorData.kt`
+
+**에러 메시지 규칙**
+- 모든 에러 메시지는 마침표(`.`)로 끝나지 않음
+- 일관된 한국어/영어 메시지 형식 유지
+- 예시:
+  - ✅ "사용자를 찾을 수 없습니다" (O)
+  - ❌ "사용자를 찾을 수 없습니다." (X)
+  - ✅ "Invalid JWT token" (O)
+  - ❌ "Invalid JWT token." (X)
+
+**테스트 작성 규칙**
+- Exception 테스트 시 반드시 `errorCode`와 `message` 모두 검증
+```kotlin
+val exception = shouldThrow<UserNotFoundException> {
+    userService.getUser(userId)
+}
+exception.errorCode shouldBe "USER_NOT_FOUND"
+exception.message shouldBe "사용자를 찾을 수 없습니다"
 ```
 
 ---
@@ -257,42 +338,198 @@ class AccessUserIdResolver : HandlerMethodArgumentResolver {
 }
 ```
 
----
+**어노테이션 배치 규칙**
 
-### 6. Redis 엔티티
-
+**클래스/인터페이스 레벨**: 선언부 바로 위 (개행 없음)
 ```kotlin
-@RedisHash(value = "refresh_token", timeToLive = 604800)  // 7일
-data class RefreshToken(
-    @Id val token: String,
-    @Indexed val userId: Long,
-    val createdAt: Long = System.currentTimeMillis()
+@Service
+class UserService(private val userRepository: UserRepository) { }
+
+@Component
+@Order(Ordered.HIGHEST_PRECEDENCE + 2)
+class AccessLogFilter : OncePerRequestFilter() { }
+
+@ConfigurationProperties(prefix = "auth.jwt")
+data class JwtProperties(...)
+```
+
+**파라미터 어노테이션**: `@param:` 접두사 (Jackson/Validation)
+```kotlin
+data class UserResponse(
+    @param:JsonProperty("user_id") val userId: UUID,
+    @param:JsonProperty("email") val email: String?
 )
+```
+
+**메서드 파라미터**: 직접 적용
+```kotlin
+fun getUser(@AccessUserId userId: UUID): UserResponse
+fun createUser(@Valid @RequestBody request: CreateUserRequest)
+```
+
+**필드 어노테이션**: 특별한 경우만 사용 (일반적으로 생성자 주입 선호)
+```kotlin
+// ❌ 필드 주입 금지
+@Autowired
+private lateinit var userRepository: UserRepository
+
+// ✅ 생성자 주입
+class UserService(private val userRepository: UserRepository)
 ```
 
 ---
 
-### 7. Feign 클라이언트
+### 6. Transaction 및 메서드 설계
 
+**@Transactional 주의사항**
+
+**Self-Invocation 문제**
 ```kotlin
-@FeignClient(
-    name = "kakao-auth",
-    url = "\${auth.oauth.kakao.auth-url}",
-    configuration = [FeignConfig::class]
-)
-interface KakaoAuthClient {
-    @PostMapping("/oauth/token")
-    fun getToken(@RequestBody request: KakaoTokenRequest): KakaoTokenResponse
+// ❌ Bad: private 메서드는 프록시를 거치지 않아 @Transactional 무시됨
+@Service
+class UserService {
+    @Transactional
+    fun publicMethod() {
+        privateMethod()  // Self-invocation: @Transactional 작동 안 함
+    }
+
+    @Transactional
+    private fun privateMethod() { ... }
+}
+
+// ✅ Good: 별도 Service로 분리 또는 public으로 변경
+@Service
+class UserService(private val userHelper: UserHelper) {
+    @Transactional
+    fun publicMethod() {
+        userHelper.transactionalMethod()  // 외부 호출: 정상 작동
+    }
+}
+
+@Service
+class UserHelper {
+    @Transactional
+    fun transactionalMethod() { ... }
 }
 ```
 
-**FeignConfig**
+**Transactional 범위 주의사항**:
+- **Self-Invocation**: 같은 클래스 내 private/internal 메서드 호출 시 프록시를 거치지 않음
+- **해결책**: 별도 Service로 분리, public 메서드로 변경, 또는 `TransactionalEventListener` 활용
+- **읽기 전용**: 조회만 하는 경우 `@Transactional(readOnly = true)` 사용
+- **최소 범위**: 트랜잭션은 필요한 최소 범위로만 설정
+
+**메서드 길이 제한**
+- **30 line 초과**: ⚠️ WARNING - 리팩토링 검토 필요 (사용자 판단 위임)
+- **50 line 초과**: ❌ 불가 - 반드시 분리 필수
+- **원칙**: 하나의 메서드는 하나의 책임만 (Single Responsibility)
+
+**중첩 깊이 (Nesting Depth) 제한**
+```kotlin
+// ❌ Bad: 4 depth (불가)
+fun process() {
+    if (condition1) {           // depth 1
+        for (item in items) {    // depth 2
+            if (condition2) {    // depth 3
+                when (type) {    // depth 4 - 금지!
+                    ...
+                }
+            }
+        }
+    }
+}
+
+// ✅ Good: Early return으로 depth 감소
+fun process() {
+    if (!condition1) return     // depth 1
+
+    for (item in items) {        // depth 1
+        if (!condition2) continue // depth 2
+        processItem(item)        // 별도 메서드로 분리
+    }
+}
+```
+
+**Depth 제한**:
+- **3 depth**: ⚠️ WARNING - 리팩토링 권장 (사용자 판단 위임)
+- **4 depth 이상**: ❌ 불가 - Early return, 메서드 분리, Guard clause 활용 필수
+
+**코드 품질 개선 기법**:
+- **Early Return**: 조건 불만족 시 즉시 반환
+- **Guard Clause**: 예외 케이스 먼저 처리
+- **Extract Method**: 복잡한 로직은 별도 메서드로 분리
+- **Flatten Structure**: when/if 중첩 대신 sealed class/enum 활용
+
+---
+
+### 7. Redis 엔티티
+
+```kotlin
+@RedisHash(value = "auth:token:refresh", timeToLive = 604800)  // 7일
+data class RefreshTokenEntity(
+    @Id
+    val jti: String,  // JWT ID (토큰 고유 식별자)
+
+    @Indexed
+    val userId: UUID,  // 사용자 UUID
+
+    val ip: String?,
+    val userAgent: String?,
+    val device: String?,
+    val platformType: String?
+)
+```
+
+**Key Changes**:
+- Entity name: `RefreshToken` → `RefreshTokenEntity`
+- Hash key: `"refresh_token"` → `"auth:token:refresh"` (namespaced)
+- ID field: `token` → `jti` (JWT standard claim)
+- userId type: `Long` → `UUID`
+- Removed: `createdAt` (Redis TTL handles expiration)
+- Added: Security metadata fields (ip, userAgent, device, platformType)
+
+**Reference**: `src/main/kotlin/io/chaekpool/auth/token/entity/RefreshTokenEntity.kt`
+
+---
+
+### 8. Feign 클라이언트
+
+```kotlin
+@FeignClient(
+    name = "kakaoAuthClient",
+    url = "https://kauth.kakao.com",
+    configuration = [OAuth2FeignConfig::class]
+)
+interface KakaoAuthClient {
+    @PostMapping(
+        value = ["/oauth/token"],
+        consumes = [MediaType.APPLICATION_JSON_VALUE]
+    )
+    fun postOAuthToken(
+        @RequestParam("grant_type") grantType: String,
+        @RequestParam("client_id") clientId: String,
+        @RequestParam("client_secret") clientSecret: String,
+        @RequestParam("redirect_uri") redirectUri: String,
+        @RequestParam("code") code: String
+    ): KakaoAuthTokenResponse
+}
+```
+
+**Key Changes**:
+- Method: `getToken` → `postOAuthToken` (명명 규칙 준수)
+- Parameters: `@RequestBody` → `@RequestParam` (application/json OAuth2 표준)
+- Configuration: `FeignConfig` → `OAuth2FeignConfig` (실제 클래스명)
+- Content-Type: application/json (OAuth2 spec)
+
+**Reference**: `src/main/kotlin/io/chaekpool/auth/oauth2/client/KakaoAuthClient.kt`
+
+**OAuth2FeignConfig**
 - `SingleLineFeignLogger`: 요청/응답을 한 줄로 로깅
 - `FeignErrorDecoder`: HTTP 에러를 `ExternalServiceException`으로 변환
 
 ---
 
-### 8. Security 설정
+### 9. Security 설정
 
 **특징**
 - Stateless Session (세션 없음)
@@ -328,41 +565,68 @@ class UserServiceTest : BehaviorSpec({
     }
 
     Given("사용자 ID가 주어졌을 때") {
-        val userId = 1L
-        val user = User(id = userId, name = "Test")
-        every { userRepository.findById(userId) } returns user
+        // Arrange: 테스트 데이터 및 Mock 설정
+        val userId = UUIDv7.generate()
+        val userPojo = Users(
+            id = userId,
+            email = "test@example.com",
+            username = "testuser",
+            profileImageUrl = "https://example.com/profile.jpg",
+            visibility = UserVisibilityType.PUBLIC,
+            status = UserStatusType.ACTIVE
+        )
+        every { userRepository.findById(userId) } returns userPojo
 
-        When("findById를 호출하면") {
-            val result = userService.findById(userId)
+        When("getUser를 호출하면") {
+            // Act: 실제 메서드 실행
+            val result = userService.getUser(userId)
 
             Then("사용자 정보를 반환한다") {
-                result.id shouldBe userId
+                // Assert: 결과 검증
+                result.email shouldBe "test@example.com"
+                result.username shouldBe "testuser"
+                result.visibility shouldBe "PUBLIC"
+                result.status shouldBe "ACTIVE"
             }
         }
     }
 })
 ```
 
-**BehaviorSpec 구조 (Given-When-Then)**
-- **Given**: 테스트 컨텍스트 설정 - Mock 객체 생성, 테스트 데이터 준비, `every` 설정
-- **When**: 테스트 대상 메서드 호출 - 실제 동작 실행
-- **Then**: Assertion - 결과 검증, `verify` 호출
+**BDD Pattern (Best Practice)**:
+- **Given**: Arrange - 테스트 데이터 준비, Mock 설정 (`every`)
+- **When**: Act - 실제 메서드 호출, 결과 저장
+- **Then**: Assert - 결과 검증 (`shouldBe`, `verify`)
+
+**Reference**:
+- Official: [Kotest Testing Styles](https://kotest.io/docs/framework/testing-styles.html)
+- Tutorial: [Introduction to Kotest | Baeldung](https://www.baeldung.com/kotlin/kotest)
+
+**BehaviorSpec 구조 (Given-When-Then)** - Arrange-Act-Assert 패턴
 
 ```kotlin
-Given("Mock 설정과 테스트 데이터") {
+Given("테스트 전제조건") {
+    // Arrange: 테스트 데이터 준비, Mock 설정
     val testData = ...
-    every { mock.method() } returns value  // ← Mock 설정은 Given에
+    every { mock.method() } returns value
 
     When("메서드를 호출하면") {
-        val result = service.method()  // ← 실제 호출은 When에
+        // Act: 실제 메서드 실행
+        val result = service.method()
 
         Then("결과를 검증한다") {
-            result shouldBe expected  // ← Assertion은 Then에만
+            // Assert: 결과 검증, verify 호출
+            result shouldBe expected
             verify { mock.method() }
         }
     }
 }
 ```
+
+**각 블록의 역할**:
+- **Given**: Arrange - 테스트 데이터 준비, Mock 동작 정의 (`every`)
+- **When**: Act - 대상 메서드 호출, 결과 저장
+- **Then**: Assert - 결과 검증, Mock 호출 검증 (`verify`)
 
 **MockK 1.14.9 (Mocking 규칙)**
 ```kotlin
@@ -465,7 +729,7 @@ fix(common): UserMetadataFilter ThreadLocal 메모리 누수 수정
 ### 🚨 절대 금지 사항
 1. **Co-Authored-By 금지** - 커밋 메시지에 공동 작성자/협력자 표기 절대 추가 금지
 2. **불필요한 주석 금지** - AI 생성 주석, 자명한 설명 주석 금지
-3. **비밀 정보 커밋 금지** - `.env.local`, 시크릿 키, 비밀번호 절대 커밋 금지
+3. **비밀 정보 커밋 금지** - 시크릿 키, 비밀번호, API 토큰 등 민감정보 절대 커밋 금지
 4. **deprecated 무시 금지** - `@Suppress("DEPRECATION")` 대신 올바른 API로 마이그레이션
 5. **버전 하드코딩 금지** - build.gradle.kts 상단에 `val` 변수로 버전 관리 (단, plugins 블록 제외)
 
@@ -477,8 +741,20 @@ fix(common): UserMetadataFilter ThreadLocal 메모리 누수 수정
 5. **경고 제거** - 빌드 시 warning, deprecated 등 모든 경고 해결
 6. **ThreadLocal cleanup** - ThreadLocal 사용 시 `try-finally`로 반드시 정리
 7. **CLAUDE.md 동기화** - 모든 작업 과정 중 그리고 종료 시점에 CLAUDE.md와 실제 코드 간 불일치가 있으면 사용자에게 질문 후 최신 정보로 지속적으로 업데이트
-8. **BP/레퍼런스 조사** - 작업을 위해 인터넷을 통해 Best Practice 및 레퍼런스를 적극적으로 조사
-9. **모호한 사항 질의** - 작업 과정 중 모호한 사항이나 선택사항은 사용자에게 최대한 질의한 후 작업
+8. **BP/레퍼런스 조사 (필수)** - 구현 전 **WebSearch 또는 mcp__fetch__fetch 도구 사용 필수**
+   - 공식 문서 최신 버전 확인 (Spring Boot, Kotlin, Kotest 등)
+   - Best Practice 검색 (예: "Kotlin service layer best practices 2026")
+   - 레퍼런스 구현 확인 (GitHub 검색, Stack Overflow)
+   - 보안 취약점 체크 (OWASP 가이드라인)
+   - **구현 후가 아닌 설계 단계에서 조사 수행**
+9. **모호한 사항 즉시 질의 (추측 금지)** - 불확실한 사항은 구현 전 **반드시** 사용자에게 질문
+   - **네이밍**: 클래스/메서드/변수명이 애매할 때
+   - **API 설계**: 엔드포인트 구조, 파라미터 형식, 응답 포맷
+   - **에러 처리**: 어떤 Exception을 던질지, errorCode는 무엇인지
+   - **테스트 범위**: 어디까지 테스트할지, 통합 vs 단위
+   - **설정 값**: 기본값, TTL, pool size 등
+   - **⚠️ 추측으로 진행 금지**: "아마 이럴 것 같다"는 금물, 반드시 확인
+   - **AskUserQuestion 도구 적극 활용**
 
 ---
 
