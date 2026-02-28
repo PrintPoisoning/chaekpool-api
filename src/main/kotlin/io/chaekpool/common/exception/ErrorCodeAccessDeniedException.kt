@@ -1,13 +1,12 @@
-package io.chaekpool.auth.exception
+package io.chaekpool.common.exception
 
-import io.chaekpool.common.exception.ServiceException
 import jakarta.servlet.http.HttpServletRequest
-import org.springframework.security.authentication.BadCredentialsException
+import org.springframework.security.access.AccessDeniedException
 
-class ErrorCodeBadCredentialsException(
+class ErrorCodeAccessDeniedException(
     message: String,
     cause: Throwable
-) : BadCredentialsException(message, cause) {
+) : AccessDeniedException(message, cause) {
     constructor(e: ServiceException, request: HttpServletRequest) : this(e.message, e) {
         request.setAttribute("_errorCode", e.errorCode)
         request.setAttribute("_httpStatus", e.httpStatus)

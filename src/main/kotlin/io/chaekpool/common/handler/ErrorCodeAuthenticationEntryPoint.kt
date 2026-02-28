@@ -1,4 +1,4 @@
-package io.chaekpool.auth.handler
+package io.chaekpool.common.handler
 
 import io.chaekpool.common.dto.ApiResponse
 import io.chaekpool.common.dto.ErrorData

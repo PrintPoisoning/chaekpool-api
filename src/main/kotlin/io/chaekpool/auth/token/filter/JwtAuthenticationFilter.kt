@@ -1,10 +1,10 @@
 package io.chaekpool.auth.token.filter
 
 import io.chaekpool.auth.constant.Auth.BEARER_PREFIX
-import io.chaekpool.auth.exception.ErrorCodeAccessDeniedException
-import io.chaekpool.auth.exception.ErrorCodeBadCredentialsException
 import io.chaekpool.auth.token.service.BlacklistManager
 import io.chaekpool.auth.token.service.JwtProvider
+import io.chaekpool.common.exception.ErrorCodeAccessDeniedException
+import io.chaekpool.common.exception.ErrorCodeBadCredentialsException
 import io.chaekpool.common.exception.internal.ForbiddenException
 import io.chaekpool.common.exception.internal.UnauthorizedException
 import jakarta.servlet.FilterChain
