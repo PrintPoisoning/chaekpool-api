@@ -16,7 +16,10 @@ class AuthorizationRulesConfig {
                 "/api/v1/auth/oauth2/*/callback",
                 "/api/v1/auth/token/refresh",
                 "/actuator/**",
-                "/robots.txt"
+                "/robots.txt",
+                "/v3/api-docs/**",
+                "/swagger-ui/**",
+                "/swagger-ui.html"
             ).permitAll()
             .anyRequest().authenticated()
     }

@@ -104,6 +104,16 @@ auth:
 loki:
   url: ${LOKI_URL:http://localhost:3100/loki/api/v1/push}
 
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
+
 management:
   endpoints:
     web:

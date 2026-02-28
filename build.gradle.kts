@@ -8,7 +8,8 @@ val uuidGeneratorVersion = "5.2.0"
 val kotestVersion = "6.1.0"
 val mockkVersion = "1.14.9"
 val springmockkVersion = "5.0.1"
-val restdocsApiSpecVersion = "0.19.4"
+val springdocVersion = "3.0.1"
+val wiremockVersion = "3.13.2"
 
 buildscript {
     dependencies {
@@ -26,7 +27,7 @@ plugins {
     kotlin("plugin.spring") version "2.3.10"
     id("org.springframework.boot") version "4.0.2"
     id("io.spring.dependency-management") version "1.1.7"
-    id("com.epages.restdocs-api-spec") version "0.19.4"
+
 }
 
 group = "io.chaekpool"
@@ -88,6 +89,10 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-opentelemetry")
     implementation("com.github.loki4j:loki-logback-appender:$lokiLogbackAppenderVersion")
 
+    // === API Documentation ===
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:$springdocVersion")
+    implementation("org.springframework.boot:spring-boot-jackson2")
+
     // === Testing ===
     testImplementation("org.springframework.boot:spring-boot-starter-test") {
         exclude(group = "org.junit.vintage")
@@ -109,9 +114,8 @@ dependencies {
     testImplementation("io.mockk:mockk:$mockkVersion")
     testImplementation("com.ninja-squad:springmockk:$springmockkVersion")
 
-    // REST Docs + OpenAPI 통합
-    testImplementation("com.epages:restdocs-api-spec:$restdocsApiSpecVersion")
-    testImplementation("com.epages:restdocs-api-spec-mockmvc:$restdocsApiSpecVersion")
+    // WireMock (HTTP Mock Server)
+    testImplementation("org.wiremock:wiremock-standalone:$wiremockVersion")
 }
 
 dependencyManagement {
