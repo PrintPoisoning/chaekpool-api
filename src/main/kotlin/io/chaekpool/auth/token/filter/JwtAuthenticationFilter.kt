@@ -13,6 +13,8 @@ import jakarta.servlet.http.HttpServletResponse
 import org.springframework.http.HttpHeaders.AUTHORIZATION
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.web.AuthenticationEntryPoint
+import org.springframework.security.web.access.AccessDeniedHandler
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
@@ -20,7 +22,9 @@ import org.springframework.web.filter.OncePerRequestFilter
 @Component
 class JwtAuthenticationFilter(
     private val blacklistManager: BlacklistManager,
-    private val jwtProvider: JwtProvider
+    private val jwtProvider: JwtProvider,
+    private val authenticationEntryPoint: AuthenticationEntryPoint,
+    private val accessDeniedHandler: AccessDeniedHandler
 ) : OncePerRequestFilter() {
 
     override fun doFilterInternal(
@@ -28,7 +32,19 @@ class JwtAuthenticationFilter(
         response: HttpServletResponse,
         filterChain: FilterChain
     ) {
-        resolveToken(request)?.let { setAuthentication(request, it) }
+        val token = resolveToken(request)
+
+        if (token != null) {
+            try {
+                setAuthentication(request, token)
+            } catch (e: UnauthorizedException) {
+                authenticationEntryPoint.commence(request, response, ErrorCodeBadCredentialsException(e, request))
+                return
+            } catch (e: ForbiddenException) {
+                accessDeniedHandler.handle(request, response, ErrorCodeAccessDeniedException(e, request))
+                return
+            }
+        }
 
         filterChain.doFilter(request, response)
     }
@@ -44,21 +60,15 @@ class JwtAuthenticationFilter(
     }
 
     private fun setAuthentication(request: HttpServletRequest, token: String) {
-        try {
-            blacklistManager.assertToken(token)
+        blacklistManager.assertToken(token)
 
-            val userId = jwtProvider.getUserId(token)
-            val authentication = UsernamePasswordAuthenticationToken(
-                userId,
-                null,
-                emptyList()
-            )
-            authentication.details = WebAuthenticationDetailsSource().buildDetails(request)
-            SecurityContextHolder.getContext().authentication = authentication
-        } catch (e: UnauthorizedException) {
-            throw ErrorCodeBadCredentialsException(e, request)
-        } catch (e: ForbiddenException) {
-            throw ErrorCodeAccessDeniedException(e, request)
-        }
+        val userId = jwtProvider.getUserId(token)
+        val authentication = UsernamePasswordAuthenticationToken(
+            userId,
+            null,
+            emptyList()
+        )
+        authentication.details = WebAuthenticationDetailsSource().buildDetails(request)
+        SecurityContextHolder.getContext().authentication = authentication
     }
 }
