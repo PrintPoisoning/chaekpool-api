@@ -5,6 +5,14 @@ server:
   port: ${SERVER_PORT:8080}
 
 spring:
+  docker:
+    compose:
+      file: docker-compose.local.yml
+      lifecycle-management: start-and-stop
+      arguments:
+        - --env-file
+        - .env.local
+
   datasource:
     hikari:
       maximum-pool-size: 10

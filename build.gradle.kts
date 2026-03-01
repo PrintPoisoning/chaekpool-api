@@ -89,6 +89,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-opentelemetry")
     implementation("com.github.loki4j:loki-logback-appender:$lokiLogbackAppenderVersion")
 
+    // === Docker Compose ===
+    developmentOnly("org.springframework.boot:spring-boot-docker-compose")
+
     // === API Documentation ===
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:$springdocVersion")
     implementation("org.springframework.boot:spring-boot-jackson2")
@@ -174,49 +177,26 @@ tasks.register("jooqGenerate") {
         postgres.start()
 
         try {
-            org.flywaydb.core.Flyway.configure()
-                .dataSource(postgres.jdbcUrl, postgres.username, postgres.password)
-                .locations("filesystem:src/main/resources/db/migration")
-                .load()
-                .migrate()
+            org.flywaydb.core.Flyway.configure().dataSource(postgres.jdbcUrl, postgres.username, postgres.password)
+                .locations("filesystem:src/main/resources/db/migration").load().migrate()
 
             org.jooq.codegen.GenerationTool.generate(
-                org.jooq.meta.jaxb.Configuration()
-                    .withLogging(Logging.INFO)
-                    .withJdbc(
-                        org.jooq.meta.jaxb.Jdbc()
-                            .withDriver("org.postgresql.Driver")
-                            .withUrl(postgres.jdbcUrl)
-                            .withUser(postgres.username)
-                            .withPassword(postgres.password)
-                    )
-                    .withGenerator(
-                        org.jooq.meta.jaxb.Generator()
-                            .withName("org.jooq.codegen.KotlinGenerator")
-                            .withDatabase(
-                                org.jooq.meta.jaxb.Database()
-                                    .withName("org.jooq.meta.postgres.PostgresDatabase")
-                                    .withInputSchema("public")
-                                    .withIncludes(".*")
-                                    .withExcludes("flyway_schema_history")
-                            )
-                            .withGenerate(
-                                org.jooq.meta.jaxb.Generate()
-                                    .withDeprecated(false)
-                                    .withRecords(true)
-                                    .withImmutablePojos(true)
-                                    .withFluentSetters(true)
-                                    .withJavaTimeTypes(true)
-                                    .withKotlinNotNullPojoAttributes(true)
-                                    .withKotlinNotNullRecordAttributes(true)
+                org.jooq.meta.jaxb.Configuration().withLogging(Logging.INFO).withJdbc(
+                        org.jooq.meta.jaxb.Jdbc().withDriver("org.postgresql.Driver").withUrl(postgres.jdbcUrl)
+                            .withUser(postgres.username).withPassword(postgres.password)
+                    ).withGenerator(
+                        org.jooq.meta.jaxb.Generator().withName("org.jooq.codegen.KotlinGenerator").withDatabase(
+                                org.jooq.meta.jaxb.Database().withName("org.jooq.meta.postgres.PostgresDatabase")
+                                    .withInputSchema("public").withIncludes(".*").withExcludes("flyway_schema_history")
+                            ).withGenerate(
+                                org.jooq.meta.jaxb.Generate().withDeprecated(false).withRecords(true)
+                                    .withImmutablePojos(true).withFluentSetters(true).withJavaTimeTypes(true)
+                                    .withKotlinNotNullPojoAttributes(true).withKotlinNotNullRecordAttributes(true)
 //                                    .withKotlinDefaultedNullablePojoAttributes(false)
 //                                    .withKotlinDefaultedNullableRecordAttributes(false)
-                            )
-                            .withTarget(
-                                org.jooq.meta.jaxb.Target()
-                                    .withPackageName("io.chaekpool.generated.jooq")
-                                    .withDirectory(jooqOutputDir.get().toString())
-                                    .withClean(true)
+                            ).withTarget(
+                                org.jooq.meta.jaxb.Target().withPackageName("io.chaekpool.generated.jooq")
+                                    .withDirectory(jooqOutputDir.get().toString()).withClean(true)
                             )
                     )
             )
