@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>chaekpool API - Swagger OAuth2 UI</title>
+    <link rel="stylesheet" href="/swagger-ui/swagger-ui.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 20px;
+            background: #1b1b1b;
+            color: #fff;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .toolbar-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .toolbar-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .toolbar-status {
+            font-size: 13px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            background: #333;
+        }
+
+        .toolbar-status.authenticated {
+            background: #1a7f37;
+        }
+
+        .btn-kakao {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: #FEE500;
+            color: #000;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .btn-kakao:hover {
+            opacity: 0.85;
+        }
+
+        .btn-kakao:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-logout {
+            padding: 8px 12px;
+            background: #555;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            margin-left: 8px;
+        }
+
+        .btn-logout:hover {
+            background: #777;
+        }
+
+        #swagger-ui {
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+<div class="toolbar">
+    <div class="toolbar-left">
+        <span class="toolbar-title">chaekpool Dev Tools</span>
+        <span id="auth-status" class="toolbar-status">미인증</span>
+    </div>
+    <div>
+        <button id="btn-kakao" class="btn-kakao" onclick="kakaoLogin()">카카오 Login</button>
+        <button id="btn-logout" class="btn-logout" onclick="logout()" style="display:none;">Logout</button>
+    </div>
+</div>
+<div id="swagger-ui"></div>
+
+<script src="/swagger-ui/swagger-ui-bundle.js"></script>
+<script src="/swagger-ui/swagger-ui-standalone-preset.js"></script>
+<script>
+    let swaggerUi;
+
+    window.addEventListener('DOMContentLoaded', function () {
+        swaggerUi = SwaggerUIBundle({
+            url: '/v3/api-docs',
+            dom_id: '#swagger-ui',
+            presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+            layout: 'StandaloneLayout',
+            persistAuthorization: true,
+            onComplete: function () {
+                const stored = localStorage.getItem('swagger_access_token');
+                if (stored) {
+                    swaggerUi.preauthorizeApiKey('bearerAuth', stored);
+                    setAuthenticated(true);
+                }
+            }
+        });
+    });
+
+    function kakaoLogin() {
+        var btn = document.getElementById('btn-kakao');
+        btn.disabled = true;
+
+        var popup = window.open(
+            '/api/v1/auth/swagger/oauth2/kakao',
+            'kakao-login',
+            'width=500,height=600,scrollbars=yes'
+        );
+
+        var timer = setInterval(function () {
+            if (popup && popup.closed) {
+                clearInterval(timer);
+                btn.disabled = false;
+            }
+        }, 500);
+    }
+
+    window.addEventListener('message', function (event) {
+        if (event.origin !== window.location.origin) return;
+        if (!event.data || event.data.type !== 'KAKAO_AUTH_COMPLETE') return;
+
+        var accessToken = event.data.accessToken;
+        if (!accessToken) return;
+
+        localStorage.setItem('swagger_access_token', accessToken);
+        swaggerUi.preauthorizeApiKey('bearerAuth', accessToken);
+        setAuthenticated(true);
+    });
+
+    function logout() {
+        localStorage.removeItem('swagger_access_token');
+        swaggerUi.preauthorizeApiKey('bearerAuth', '');
+        setAuthenticated(false);
+    }
+
+    function setAuthenticated(isAuth) {
+        var status = document.getElementById('auth-status');
+        var btnLogout = document.getElementById('btn-logout');
+
+        if (isAuth) {
+            status.textContent = '인증됨';
+            status.classList.add('authenticated');
+            btnLogout.style.display = 'inline-block';
+        } else {
+            status.textContent = '미인증';
+            status.classList.remove('authenticated');
+            btnLogout.style.display = 'none';
+        }
+    }
+</script>
+</body>
+</html>
