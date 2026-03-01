@@ -15,7 +15,7 @@ class ProviderAccountRepository(
     private val jsonMapper: JsonMapper
 ) {
 
-    fun findByProviderAndAccountId(providerId: UUID, accountId: String): ProviderAccounts? =
+    fun findByProviderIdAndAccountId(providerId: UUID, accountId: String): ProviderAccounts? =
         dsl
             .select(
                 PROVIDER_ACCOUNTS.USER_ID,

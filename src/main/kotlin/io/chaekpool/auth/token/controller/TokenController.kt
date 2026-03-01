@@ -9,6 +9,7 @@ import io.chaekpool.auth.token.provider.CookieProvider
 import io.chaekpool.auth.token.service.TokenService
 import io.micrometer.observation.annotation.Observed
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.http.HttpHeaders.SET_COOKIE
@@ -31,7 +32,8 @@ class TokenController(
 
     @Operation(
         summary = "로그아웃",
-        description = "access token과 refresh token을 블랙리스트에 등록하고 비활성화합니다"
+        description = "access token과 refresh token을 블랙리스트에 등록하고 비활성화합니다",
+        security = [SecurityRequirement(name = "bearerAuth")]
     )
     @SwaggerApiResponse(responseCode = "204", description = "로그아웃 성공")
     @SwaggerApiResponse(responseCode = "401", description = "인증 실패")

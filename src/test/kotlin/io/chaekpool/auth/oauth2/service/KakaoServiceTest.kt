@@ -101,7 +101,7 @@ class KakaoServiceTest : BehaviorSpec({
                     id = providerId, providerName = AuthProvider.KAKAO, description = "카카오 소셜 로그인"
                 )
                 every {
-                    providerAccountRepository.findByProviderAndAccountId(
+                    providerAccountRepository.findByProviderIdAndAccountId(
                         providerId,
                         kakaoId.toString()
                     )
@@ -162,7 +162,7 @@ class KakaoServiceTest : BehaviorSpec({
                     id = providerId, providerName = AuthProvider.KAKAO, description = "카카오 소셜 로그인"
                 )
                 every {
-                    providerAccountRepository.findByProviderAndAccountId(providerId, kakaoId.toString())
+                    providerAccountRepository.findByProviderIdAndAccountId(providerId, kakaoId.toString())
                 } returns existingProviderAccount
                 every { providerAccountRepository.updateAuthRegistry(existingUserId, providerId, kakaoToken) } returns 1
                 every { userRepository.updateLastLoginAt(existingUserId) } returns 1

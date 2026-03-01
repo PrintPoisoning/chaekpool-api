@@ -39,11 +39,10 @@ class KakaoService(
     fun authenticate(code: String): TokenPair {
         val kakaoToken = getKakaoTokens(code)
         val kakaoAccount = getKakaoAccount(kakaoToken.accessToken)
-        val accountId = kakaoAccount.id
+        val accountId = kakaoAccount.id.toString()
 
         val providerId = getKakaoProviderId()
-        val existingUserId =
-            providerAccountRepository.findByProviderAndAccountId(providerId, accountId.toString())?.userId
+        val existingUserId = providerAccountRepository.findByProviderIdAndAccountId(providerId, accountId)?.userId
 
         val userId = if (Objects.isNull(existingUserId)) {
             createProviderAccount(providerId, accountId, kakaoAccount, kakaoToken)
@@ -115,7 +114,7 @@ class KakaoService(
     @Transactional
     fun createProviderAccount(
         providerId: UUID,
-        kakaoId: Long,
+        kakaoId: String,
         kakaoUser: io.chaekpool.auth.oauth2.dto.KakaoApiAccountResponse,
         kakaoToken: KakaoAuthTokenResponse
     ): UUID {
@@ -130,7 +129,7 @@ class KakaoService(
         providerAccountRepository.saveProviderAccount(
             userId = newUser.id!!,
             providerId = providerId,
-            accountId = kakaoId.toString(),
+            accountId = kakaoId,
             accountRegistry = kakaoUser,
             authRegistry = kakaoToken
         )

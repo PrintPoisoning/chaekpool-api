@@ -5,6 +5,7 @@ import io.chaekpool.user.dto.UserResponse
 import io.chaekpool.user.service.UserService
 import io.micrometer.observation.annotation.Observed
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -21,7 +22,8 @@ class UserController(private val userService: UserService) {
 
     @Operation(
         summary = "현재 사용자 정보 조회",
-        description = "JWT access token으로 인증된 사용자의 정보를 반환합니다"
+        description = "JWT access token으로 인증된 사용자의 정보를 반환합니다",
+        security = [SecurityRequirement(name = "bearerAuth")]
     )
     @SwaggerApiResponse(responseCode = "200", description = "사용자 정보 반환")
     @SwaggerApiResponse(responseCode = "401", description = "인증 실패")
