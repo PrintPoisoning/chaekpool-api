@@ -50,6 +50,9 @@ spring:
             user-info-uri: https://kapi.kakao.com/v2/user/me
             user-name-attribute: id
 
+  jooq:
+    sql-dialect: POSTGRES
+
   cloud:
     openfeign:
       client:
@@ -64,9 +67,6 @@ server:
   compression:
     enabled: true
     mime-types: application/json,application/xml,text/html,text/xml,text/plain
-
-jooq:
-  sql-dialect: POSTGRES
 
 logging:
   pattern:
@@ -98,8 +98,6 @@ auth:
       client-id: ${KAKAO_CLIENT_ID}
       client-secret: ${KAKAO_CLIENT_SECRET}
       redirect-uri: ${KAKAO_REDIRECT_URI}
-      auth-url: https://kauth.kakao.com
-      api-url: https://kapi.kakao.com
 
 loki:
   url: ${LOKI_URL:http://localhost:3100/loki/api/v1/push}
@@ -126,7 +124,7 @@ management:
       probes:
         enabled: true
     prometheus:
-      enabled: true
+      access: unrestricted
   metrics:
     tags:
       application: ${spring.application.name}
