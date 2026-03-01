@@ -62,6 +62,9 @@
         <neverBlock>true</neverBlock>
     </appender>
 
+    <!-- jOOQ 배너/팁 로그 비활성화 -->
+    <logger name="org.jooq.Constants" level="OFF"/>
+
     <!-- Root Logger -->
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
