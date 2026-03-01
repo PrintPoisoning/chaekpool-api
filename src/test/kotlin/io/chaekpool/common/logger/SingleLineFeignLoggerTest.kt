@@ -34,10 +34,10 @@ class SingleLineFeignLoggerTest : BehaviorSpec({
             .target(TestFeignClient::class.java, wireMock.baseUrl())
 
     fun requestLog(): String? =
-        appender.list.map { it.formattedMessage }.firstOrNull { it.contains("[FEIGN_REQUEST]") }
+        appender.list.map { it.formattedMessage }.firstOrNull { it.contains("[HTTP_EXT_REQ]") }
 
     fun responseLog(): String? =
-        appender.list.map { it.formattedMessage }.firstOrNull { it.contains("[FEIGN_RESPONSE]") }
+        appender.list.map { it.formattedMessage }.firstOrNull { it.contains("[HTTP_EXT_RES]") }
 
     beforeSpec {
         wireMock.start()
@@ -76,7 +76,7 @@ class SingleLineFeignLoggerTest : BehaviorSpec({
 
                 val reqLog = requestLog()
                 reqLog shouldNotBe null
-                reqLog shouldContain "[FEIGN_REQUEST]"
+                reqLog shouldContain "[HTTP_EXT_REQ]"
                 reqLog shouldContain "method=GET"
                 reqLog shouldContain "/test"
                 reqLog shouldNotContain "headers="
@@ -84,9 +84,9 @@ class SingleLineFeignLoggerTest : BehaviorSpec({
 
                 val resLog = responseLog()
                 resLog shouldNotBe null
-                resLog shouldContain "[FEIGN_RESPONSE]"
+                resLog shouldContain "[HTTP_EXT_RES]"
                 resLog shouldContain "status=200"
-                resLog shouldContain "elapsedTime="
+                resLog shouldContain "elapsed="
                 resLog shouldNotContain "headers="
                 resLog shouldNotContain "body="
             }

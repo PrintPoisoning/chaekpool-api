@@ -18,11 +18,11 @@ class GlobalExceptionHandler(
     private val tracer: Tracer
 ) {
 
-    private val logger = KotlinLogging.logger {}
+    private val log = KotlinLogging.logger {}
 
     @ExceptionHandler(ServiceException::class)
     fun handleServiceException(e: ServiceException): ResponseEntity<ApiResponse<ErrorData>> {
-        logger.warn { "ServiceException: ${e.errorCode} - ${e.message}" }
+        log.warn { "[EXCEPTION] code=${e.errorCode} message=${e.message}" }
 
         return buildErrorResponse(
             status = e.httpStatus,
@@ -34,7 +34,7 @@ class GlobalExceptionHandler(
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidationException(e: MethodArgumentNotValidException): ResponseEntity<ApiResponse<ErrorData>> {
         val message = e.bindingResult.fieldErrors.joinToString { "${it.field}=${it.defaultMessage}" }
-        logger.warn { "Validation error: $message" }
+        log.warn { "[EXCEPTION] code=VALIDATION_ERROR message=$message" }
 
         return buildErrorResponse(
             status = HttpStatus.BAD_REQUEST,
@@ -44,24 +44,31 @@ class GlobalExceptionHandler(
     }
 
     @ExceptionHandler(NoResourceFoundException::class)
-    fun handleNotFound(e: NoResourceFoundException): ResponseEntity<ApiResponse<ErrorData>> =
-        buildErrorResponse(
+    fun handleNotFound(e: NoResourceFoundException): ResponseEntity<ApiResponse<ErrorData>> {
+        log.warn { "[EXCEPTION] code=NOT_FOUND message=리소스를 찾을 수 없습니다" }
+
+        return buildErrorResponse(
             status = HttpStatus.NOT_FOUND,
             code = "NOT_FOUND",
             message = "리소스를 찾을 수 없습니다"
         )
+    }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException::class)
-    fun handleMethodNotSupported(e: HttpRequestMethodNotSupportedException): ResponseEntity<ApiResponse<ErrorData>> =
-        buildErrorResponse(
+    fun handleMethodNotSupported(e: HttpRequestMethodNotSupportedException): ResponseEntity<ApiResponse<ErrorData>> {
+        val message = "지원하지 않는 HTTP 메서드입니다. supported=${e.supportedMethods?.joinToString()}"
+        log.warn { "[EXCEPTION] code=METHOD_NOT_ALLOWED message=$message" }
+
+        return buildErrorResponse(
             status = HttpStatus.METHOD_NOT_ALLOWED,
             code = "METHOD_NOT_ALLOWED",
-            message = "지원하지 않는 HTTP 메서드입니다. supported=${e.supportedMethods?.joinToString()}"
+            message = message
         )
+    }
 
     @ExceptionHandler(Exception::class)
     fun handleGenericException(e: Exception): ResponseEntity<ApiResponse<ErrorData>> {
-        logger.error(e) { "Unhandled exception: ${e.message}" }
+        log.error(e) { "[EXCEPTION] code=INTERNAL_SERVER_ERROR message=${e.message}" }
 
         return buildErrorResponse(
             status = HttpStatus.INTERNAL_SERVER_ERROR,

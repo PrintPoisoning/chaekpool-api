@@ -129,6 +129,36 @@ src/test/kotlin/
     └── ChaekpoolApplicationTests.kt  # Spring Context 로드 테스트
 ```
 
+### Logging Convention
+
+| Prefix            | Level | Source                            | 설명          |
+|-------------------|-------|-----------------------------------|-------------|
+| `[HTTP_IN]`       | INFO  | AccessLogFilter                   | 요청 수신       |
+| `[HTTP_IN_BODY]`  | DEBUG | AccessLogFilter                   | 요청 body     |
+| `[HTTP_OUT_BODY]` | DEBUG | AccessLogFilter                   | 응답 body     |
+| `[HTTP_OUT]`      | INFO  | AccessLogFilter                   | 응답 완료       |
+| `[HTTP_EXT_REQ]`  | DEBUG | SingleLineFeignLogger             | 외부 API 요청   |
+| `[HTTP_EXT_RES]`  | DEBUG | SingleLineFeignLogger             | 외부 API 응답   |
+| `[HTTP_EXT_ERR]`  | ERROR | FeignErrorDecoder                 | 외부 API 에러   |
+| `[EXCEPTION]`     | WARN  | GlobalExceptionHandler            | 애플리케이션 예외   |
+| `[AUTH_FAILED]`   | WARN  | ErrorCodeAuthenticationEntryPoint | 인증 실패 (401) |
+| `[AUTH_DENIED]`   | WARN  | ErrorCodeAccessDeniedHandler      | 접근 거부 (403) |
+
+**포맷**: `[PREFIX] key1=value1 key2=value2` (공백 구분, 쉼표 금지)
+
+**요청 라이프사이클 (AccessLogFilter)**:
+
+```
+[HTTP_IN]       method=POST uri=/api/v1/users ip=127.0.0.1 platform=DESKTOP     ← INFO
+[HTTP_IN_BODY]  body={"nickname":"test"}                                          ← DEBUG
+[HTTP_OUT_BODY] body={"trace_id":"...","status":201,"data":{...}}                ← DEBUG
+[HTTP_OUT]      method=POST uri=/api/v1/users status=201 elapsed=45ms            ← INFO
+```
+
+- DEBUG body 로깅은 `ContentCachingWrapper`를 사용하며 DEBUG 모드에서만 wrapping (INFO 모드 성능 오버헤드 없음)
+- Multipart 요청은 request body 로깅 제외
+- Body는 1000자 초과 시 truncate
+
 ### 주요 기술 스택
 
 - **API 경로**: `/api/v1/...`

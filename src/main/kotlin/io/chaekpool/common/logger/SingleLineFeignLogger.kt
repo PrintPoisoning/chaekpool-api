@@ -32,7 +32,7 @@ class SingleLineFeignLogger : Logger() {
     }
 
     private fun formatRequest(logLevel: Level, request: Request): String = buildString {
-        append("[FEIGN_REQUEST] method=${request.httpMethod()} url=${request.url()}")
+        append("[HTTP_EXT_REQ] method=${request.httpMethod()} url=${request.url()}")
         if (includeHeaders(logLevel)) append(" headers=[${formatHeaders(request.headers())}]")
         if (includeBody(logLevel)) append(" body=${request.body()?.toString(Charsets.UTF_8)}")
     }
@@ -52,7 +52,7 @@ class SingleLineFeignLogger : Logger() {
         elapsedTime: Long,
         body: String?
     ): String = buildString {
-        append("[FEIGN_RESPONSE] status=${response.status()} elapsedTime=${elapsedTime}ms")
+        append("[HTTP_EXT_RES] status=${response.status()} elapsed=${elapsedTime}ms")
         if (includeHeaders(logLevel)) append(" headers=[${formatHeaders(response.headers())}]")
         if (body != null) append(" body=$body")
     }

@@ -2,6 +2,7 @@ package io.chaekpool.common.handler
 
 import io.chaekpool.common.dto.ApiResponse
 import io.chaekpool.common.dto.ErrorData
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.micrometer.tracing.Tracer
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -18,6 +19,8 @@ class ErrorCodeAuthenticationEntryPoint(
     private val tracer: Tracer
 ) : AuthenticationEntryPoint {
 
+    private val log = KotlinLogging.logger {}
+
     override fun commence(
         request: HttpServletRequest,
         response: HttpServletResponse,
@@ -25,6 +28,8 @@ class ErrorCodeAuthenticationEntryPoint(
     ) {
         val status = request.getAttribute("_httpStatus") as? HttpStatus ?: HttpStatus.UNAUTHORIZED
         val errorCode = request.getAttribute("_errorCode") as? String ?: "UNAUTHORIZED"
+
+        log.warn { "[AUTH_FAILED] code=$errorCode status=${status.value()} message=${exception.message}" }
 
         val body = ApiResponse(
             traceId = tracer.currentSpan()?.context()?.traceId() ?: "",

@@ -22,7 +22,7 @@ class FeignErrorDecoder : ErrorDecoder {
             ?.use { String(it.readAllBytes(), StandardCharsets.UTF_8) }
             ?: "No response body"
 
-        log.error { "[FEIGN_ERROR] methodKey=$methodKey, status=${response.status()}, body=$body" }
+        log.error { "[HTTP_EXT_ERR] methodKey=$methodKey status=${response.status()} body=$body" }
 
         return when (response.status()) {
             400 -> ExternalBadRequestException(ExternalSystem.UNKNOWN_API)

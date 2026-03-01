@@ -2,6 +2,7 @@ package io.chaekpool.common.handler
 
 import io.chaekpool.common.dto.ApiResponse
 import io.chaekpool.common.dto.ErrorData
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.micrometer.tracing.Tracer
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -18,6 +19,8 @@ class ErrorCodeAccessDeniedHandler(
     private val tracer: Tracer
 ) : AccessDeniedHandler {
 
+    private val log = KotlinLogging.logger {}
+
     override fun handle(
         request: HttpServletRequest,
         response: HttpServletResponse,
@@ -25,6 +28,8 @@ class ErrorCodeAccessDeniedHandler(
     ) {
         val status = request.getAttribute("_httpStatus") as? HttpStatus ?: HttpStatus.FORBIDDEN
         val errorCode = request.getAttribute("_errorCode") as? String ?: "FORBIDDEN"
+
+        log.warn { "[AUTH_DENIED] code=$errorCode status=${status.value()} message=${exception.message}" }
 
         val body = ApiResponse(
             traceId = tracer.currentSpan()?.context()?.traceId() ?: "",
