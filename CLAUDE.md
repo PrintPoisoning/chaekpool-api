@@ -5,10 +5,12 @@
 책풀(chaekpool) API - 책을 고르고, 리뷰를 쓰고, 공유하는 기록형 SNS의 백엔드
 
 **Tech Stack:**
+
 - Spring Boot 4.0.2 / Kotlin 2.3.10 / Java 25
 - Build: Gradle 9.3.1 (Kotlin DSL)
 - Database: PostgreSQL 18.2 + jOOQ 3.19.29
 - Cache: Valkey 9.0.2 (Redis)
+- Infra: spring-boot-docker-compose (Docker Compose 자동 실행)
 - Test: Kotest 6.1.0 + MockK 1.14.9 + Testcontainers 2.0.3
 
 ---
@@ -16,6 +18,7 @@
 ## Build & Run
 
 ### 빌드 및 실행
+
 ```bash
 ./gradlew build              # 전체 빌드
 ./gradlew compileKotlin      # 컴파일만
@@ -25,18 +28,23 @@
 ```
 
 ### 로컬 인프라 실행
+
 ```bash
-# PostgreSQL, Valkey, Prometheus, Loki, Jaeger, Grafana 실행
-docker compose --env-file .env.local up -d
+# local 프로필로 앱 실행 시 Docker Compose 자동 실행 (spring-boot-docker-compose)
+SPRING_PROFILES_ACTIVE=local ./gradlew bootRun
+
+# 수동 실행 (Docker Compose만)
+docker compose -f docker-compose.local.yml up -d
 
 # 종료
-docker compose --env-file .env.local down
+docker compose -f docker-compose.local.yml down
 
 # 종료 + 데이터 초기화 (볼륨 삭제)
-docker compose --env-file .env.local down -v
+docker compose -f docker-compose.local.yml down -v
 ```
 
 ### 환경 변수
+
 - `.env.local` 파일 직접 참고 (프로젝트 루트에 위치)
 - `.env.local` 참고하여 환경 설정 (개발 환경이므로 민감정보 없음, 커밋 대상)
 - **프로덕션 환경**: 반드시 환경변수로 주입, 파일 커밋 금지
@@ -47,13 +55,14 @@ docker compose --env-file .env.local down -v
 ## Architecture
 
 ### 모듈 구조
+
 ```
 io.chaekpool/
 ├── auth/                    # 인증/인가 (OAuth, JWT, Token)
 │   ├── annotation/          # @AccessUserId, @RefreshUserId, @AccessToken, @RefreshToken
-│   ├── dev/                 # 개발용 인증 (local/dev 전용)
-│   │   └── controller/      # DevAuthController (Dev Login)
 │   ├── dto/                 # AuthResponse
+│   ├── swagger/             # Swagger UI 카카오 OAuth 인증 (local/dev 전용)
+│   │                        # SwaggerAuthController (팝업 OAuth → postMessage → JWT)
 │   ├── oauth2/              # Kakao OAuth 로그인
 │   │   ├── client/          # KakaoAuthClient, KakaoApiClient (Feign)
 │   │   ├── config/          # KakaoAuthProperties, OAuth2FeignConfig
@@ -94,6 +103,7 @@ io.chaekpool/
 ```
 
 ### 테스트 구조
+
 ```
 src/test/kotlin/
 ├── io/kotest/provided/
@@ -101,8 +111,6 @@ src/test/kotlin/
 └── io/chaekpool/
     ├── support/                 # TestcontainersConfig (PostgreSQL, Valkey)
     ├── auth/
-    │   ├── dev/
-    │   │   └── controller/      # DevAuthControllerTest
     │   ├── oauth2/
     │   │   ├── dto/             # KakaoAuthTokenResponseTest (TC 통합 테스트)
     │   │   └── service/         # KakaoServiceTest
@@ -122,14 +130,16 @@ src/test/kotlin/
 ```
 
 ### 주요 기술 스택
+
 - **API 경로**: `/api/v1/...`
 - **ID generate**: UUID version 7 (시간 기반 + 랜덤) - postgreSQL `DEFAULT uuidv7()`, kotlin `UUIDv7.generate()`
 - **Database**: PostgreSQL 18.2 + jOOQ (Type-safe SQL)
 - **Migration**: Flyway 11.14 (`src/main/resources/db/migration`)
 - **Cache/Session**: Valkey 9.0.2 (Redis 호환) - RefreshToken, TokenBlacklist 저장
 - **Monitoring**: Prometheus + Loki + Jaeger (OpenTelemetry OTLP) + Grafana
-- **Profile**: `local` (Docker Compose), `dev` (서버 배포)
-- **API 문서**: springdoc-openapi (`local`/`dev`만 활성화, `persist-authorization: true`로 토큰 유지)
+- **Profile**: `local` (Docker Compose — `docker-compose.local.yml`, spring-boot-docker-compose 자동 실행), `dev` (서버 배포)
+- **API 문서**: springdoc-openapi (`local`/`dev`만 활성화, `persist-authorization: true`로 토큰 유지), 커스텀 UI:
+  `/swagger-oauth2-ui/kakao.html` (카카오 OAuth 팝업 로그인 지원)
 
 ---
 
@@ -138,12 +148,14 @@ src/test/kotlin/
 ### 0. 설계 원칙
 
 **KISS (Keep It Simple, Stupid)**
+
 - **단순함 우선**: 복잡한 아키텍처보다 명확하고 이해하기 쉬운 코드 작성
 - **과도한 추상화 지양**: 현재 필요한 기능에 집중, 미래 확장을 위한 과도한 설계 금지
 - **가독성 > 간결성**: 한 줄로 줄이는 것보다 의도가 명확한 여러 줄의 코드 선호
 - **적절한 수준**: 3번 반복되면 추상화 고려, 그 전까지는 중복 허용
 
 **SOLID 원칙**
+
 - **S**ingle Responsibility: 하나의 클래스/메서드는 하나의 책임만 가짐
   ```kotlin
   // ❌ Bad: 여러 책임
@@ -170,6 +182,7 @@ src/test/kotlin/
 - **D**ependency Inversion: 구체 클래스가 아닌 인터페이스/추상화에 의존
 
 **원칙 적용 시 유의사항**:
+
 - 무조건적 적용 금지 - 현재 필요와 복잡도 고려
 - KISS와 SOLID 균형 유지 - 과도한 SOLID는 복잡도 증가
 - 실용주의: 작은 프로젝트는 간단하게, 큰 프로젝트는 견고하게
@@ -179,12 +192,14 @@ src/test/kotlin/
 ### 1. 기본 원칙
 
 **Logging**
+
 ```kotlin
 private val log = KotlinLogging.logger {}  // ✅ 권장
 // LoggerFactory, LoggerDelegate 사용 금지 ❌
 ```
 
 **DI (Dependency Injection)**
+
 ```kotlin
 @Service
 class UserService(  // ✅ 생성자 주입
@@ -196,6 +211,7 @@ class UserService(  // ✅ 생성자 주입
 ```
 
 **DTO Naming**
+
 ```kotlin
 data class UserResponse(
     @param:JsonProperty("user_id") val userId: Long,
@@ -204,6 +220,7 @@ data class UserResponse(
 ```
 
 **Properties**
+
 ```kotlin
 @ConfigurationProperties(prefix = "auth.jwt")
 data class JwtProperties(
@@ -218,6 +235,7 @@ data class JwtProperties(
 ### 2. 예외 처리
 
 **예외 계층 구조**
+
 ```
 ServiceException (추상)
 ├── internal/
@@ -243,6 +261,7 @@ ServiceException (추상)
 ```
 
 **ErrorResponse 형식**
+
 ```json
 {
   "trace_id": "64f643976895e486ca47ab3456e06f4b",
@@ -256,27 +275,32 @@ ServiceException (추상)
 ```
 
 **참고**:
+
 - `trace_id`/`span_id`: OpenTelemetry 분산 추적용 식별자 (Jaeger 연동)
 - `status`: HTTP 상태 코드
 - `data`: 제네릭 래퍼 - 성공 시 실제 데이터, 실패 시 ErrorData
 - ErrorData 구조: `{ code: String, message: String? }`
 
 **구현 파일**:
+
 - `src/main/kotlin/io/chaekpool/common/dto/ApiResponse.kt`
 - `src/main/kotlin/io/chaekpool/common/dto/ErrorData.kt`
 
 **에러 메시지 규칙**
+
 - 모든 에러 메시지는 마침표(`.`)로 끝나지 않음
 - 일관된 한국어/영어 메시지 형식 유지
 - 예시:
-  - ✅ "사용자를 찾을 수 없습니다" (O)
-  - ❌ "사용자를 찾을 수 없습니다." (X)
-  - ✅ "Invalid JWT token" (O)
-  - ❌ "Invalid JWT token." (X)
+    - ✅ "사용자를 찾을 수 없습니다" (O)
+    - ❌ "사용자를 찾을 수 없습니다." (X)
+    - ✅ "Invalid JWT token" (O)
+    - ❌ "Invalid JWT token." (X)
 
 **테스트 작성 규칙**
+
 - 테스트 파일 명명: `???Test.kt` 형식 (JUnit 스타일 유지)
 - Exception 테스트 시 **타입 → httpStatus → errorCode → message** 순서로 반드시 모두 검증
+
 ```kotlin
 val exception = shouldThrow<UserNotFoundException> {
     userService.getUser(userId)
@@ -292,6 +316,7 @@ exception.message shouldBe "사용자를 찾을 수 없습니다"
 ### 3. 유틸리티 및 확장 함수
 
 **AssertionExtension.kt** - 검증 헬퍼
+
 ```kotlin
 // Boolean 검증
 condition.isTrueOrThrow { BadRequestException("조건 불만족") }
@@ -314,6 +339,7 @@ number.requireOrThrow({ it > 0 }) { BadRequestException("양수 필요") }
 ### 4. 필터 및 ThreadLocal
 
 **필터 구현**
+
 ```kotlin
 @Component
 class CustomFilter : OncePerRequestFilter() {
@@ -330,6 +356,7 @@ class CustomFilter : OncePerRequestFilter() {
 ```
 
 **실행 순서**
+
 1. `AccessLogFilter` (HIGHEST_PRECEDENCE + 2)
 2. `UserMetadataFilter` (순서 미지정)
 3. `JwtAuthenticationFilter` (Spring Security FilterChain)
@@ -339,6 +366,7 @@ class CustomFilter : OncePerRequestFilter() {
 ### 5. 커스텀 어노테이션
 
 **정의**
+
 ```kotlin
 @Target(AnnotationTarget.VALUE_PARAMETER)
 @Retention(AnnotationRetention.RUNTIME)
@@ -346,6 +374,7 @@ annotation class AccessUserId
 ```
 
 **Resolver 구현**
+
 ```kotlin
 @Component
 class AccessUserIdResolver : HandlerMethodArgumentResolver {
@@ -361,6 +390,7 @@ class AccessUserIdResolver : HandlerMethodArgumentResolver {
 **어노테이션 배치 규칙**
 
 **클래스/인터페이스 레벨**: 선언부 바로 위 (개행 없음)
+
 ```kotlin
 @Service
 class UserService(private val userRepository: UserRepository) { }
@@ -374,6 +404,7 @@ data class JwtProperties(...)
 ```
 
 **파라미터 어노테이션**: `@param:` 접두사 (Jackson/Validation)
+
 ```kotlin
 data class UserResponse(
     @param:JsonProperty("user_id") val userId: UUID,
@@ -382,12 +413,14 @@ data class UserResponse(
 ```
 
 **메서드 파라미터**: 직접 적용
+
 ```kotlin
 fun getUser(@AccessUserId userId: UUID): UserResponse
 fun createUser(@Valid @RequestBody request: CreateUserRequest)
 ```
 
 **필드 어노테이션**: 특별한 경우만 사용 (일반적으로 생성자 주입 선호)
+
 ```kotlin
 // ❌ 필드 주입 금지
 @Autowired
@@ -404,6 +437,7 @@ class UserService(private val userRepository: UserRepository)
 **@Transactional 주의사항**
 
 **Self-Invocation 문제**
+
 ```kotlin
 // ❌ Bad: private 메서드는 프록시를 거치지 않아 @Transactional 무시됨
 @Service
@@ -434,17 +468,20 @@ class UserHelper {
 ```
 
 **Transactional 범위 주의사항**:
+
 - **Self-Invocation**: 같은 클래스 내 private/internal 메서드 호출 시 프록시를 거치지 않음
 - **해결책**: 별도 Service로 분리, public 메서드로 변경, 또는 `TransactionalEventListener` 활용
 - **읽기 전용**: 조회만 하는 경우 `@Transactional(readOnly = true)` 사용
 - **최소 범위**: 트랜잭션은 필요한 최소 범위로만 설정
 
 **메서드 길이 제한**
+
 - **30 line 초과**: ⚠️ WARNING - 리팩토링 검토 필요 (사용자 판단 위임)
 - **50 line 초과**: ❌ 불가 - 반드시 분리 필수
 - **원칙**: 하나의 메서드는 하나의 책임만 (Single Responsibility)
 
 **중첩 깊이 (Nesting Depth) 제한**
+
 ```kotlin
 // ❌ Bad: 4 depth (불가)
 fun process() {
@@ -471,10 +508,12 @@ fun process() {
 ```
 
 **Depth 제한**:
+
 - **3 depth**: ⚠️ WARNING - 리팩토링 권장 (사용자 판단 위임)
 - **4 depth 이상**: ❌ 불가 - Early return, 메서드 분리, Guard clause 활용 필수
 
 **코드 품질 개선 기법**:
+
 - **Early Return**: 조건 불만족 시 즉시 반환
 - **Guard Clause**: 예외 케이스 먼저 처리
 - **Extract Method**: 복잡한 로직은 별도 메서드로 분리
@@ -501,6 +540,7 @@ data class RefreshTokenEntity(
 ```
 
 **Key Changes**:
+
 - Entity name: `RefreshToken` → `RefreshTokenEntity`
 - Hash key: `"refresh_token"` → `"auth:token:refresh"` (namespaced)
 - ID field: `token` → `jti` (JWT standard claim)
@@ -536,6 +576,7 @@ interface KakaoAuthClient {
 ```
 
 **Key Changes**:
+
 - Method: `getToken` → `postOAuthToken` (명명 규칙 준수)
 - Parameters: `@RequestBody` → `@RequestParam` (application/json OAuth2 표준)
 - Configuration: `FeignConfig` → `OAuth2FeignConfig` (실제 클래스명)
@@ -544,6 +585,7 @@ interface KakaoAuthClient {
 **Reference**: `src/main/kotlin/io/chaekpool/auth/oauth2/client/KakaoAuthClient.kt`
 
 **OAuth2FeignConfig**
+
 - `SingleLineFeignLogger`: 요청/응답을 한 줄로 로깅
 - `FeignErrorDecoder`: HTTP 에러를 `ExternalServiceException`으로 변환
 
@@ -552,12 +594,15 @@ interface KakaoAuthClient {
 ### 9. Security 설정
 
 **특징**
+
 - Stateless Session (세션 없음)
 - CSRF, FormLogin, HttpBasic 비활성화
 - JWT 기반 인증
-- `/api/v1/auth/oauth2/*/authorize`, `/api/v1/auth/oauth2/*/callback`, `/api/v1/auth/token/refresh`, `/api/v1/auth/dev/**`, `/v3/api-docs/**`, `/swagger-ui/**` 공개, 나머지 인증 필요
+- `/api/v1/auth/oauth2/*/authorize`, `/api/v1/auth/oauth2/*/callback`, `/api/v1/auth/token/refresh`,
+  `/api/v1/auth/swagger/**`, `/swagger-oauth2-ui/**`, `/v3/api-docs/**`, `/swagger-ui/**` 공개, 나머지 인증 필요
 
 **필터 체인**
+
 ```
 AccessLogFilter
 → UserMetadataFilter
@@ -574,6 +619,7 @@ AccessLogFilter
 ### 테스트 프레임워크
 
 **Kotest 6.1.0 (BDD 스타일)**
+
 ```kotlin
 class UserServiceTest : BehaviorSpec({
     lateinit var userRepository: UserRepository
@@ -602,10 +648,12 @@ class UserServiceTest : BehaviorSpec({
 ```
 
 **BDD Pattern (Best Practice)**:
+
 - **Given**: 순수 테스트 데이터 준비 (`val token`, `val userId`, `MockHttpServletRequest` 등)
 - **When → Then**: Mock 설정(`every`) + 실행(Act) + 검증(Assert)
 
 **Reference**:
+
 - Official: [Kotest Testing Styles](https://kotest.io/docs/framework/testing-styles.html)
 - Tutorial: [Introduction to Kotest | Baeldung](https://www.baeldung.com/kotlin/kotest)
 
@@ -632,11 +680,14 @@ Given("테스트 전제조건") {
 ```
 
 **블록별 배치 규칙**:
+
 - **Given**: 순수 데이터 준비 - lateinit mock에 의존하지 않는 값 (`val`, DTO 생성 등)
 - **When → Then**: Mock 설정(`every`) + 실행(Act) + 검증(Assert, `verify`)
-- **⚠️ 주의**: `every { mock.method() }` 등 lateinit mock 의존 코드는 반드시 Then 내부에 배치 (Given/When에서는 `beforeTest` 실행 전이므로 초기화 안 됨)
+- **⚠️ 주의**: `every { mock.method() }` 등 lateinit mock 의존 코드는 반드시 Then 내부에 배치 (Given/When에서는 `beforeTest` 실행 전이므로 초기화 안
+  됨)
 
 **MockK 1.14.9 (Mocking 규칙)**
+
 ```kotlin
 // Mock 생성 (beforeTest에서)
 beforeTest {
@@ -652,6 +703,7 @@ verify(exactly = 1) { repository.findById(1L) }
 ```
 
 **Testcontainers 2.0.3 (통합 테스트)**
+
 ```kotlin
 @TestConfiguration(proxyBeanMethods = false)
 class TestcontainersConfig {
@@ -666,6 +718,7 @@ class TestcontainersConfig {
 ```
 
 ### 테스트 실행
+
 ```bash
 ./gradlew test                                      # 전체 테스트
 ./gradlew test --tests "*UserServiceTest"          # 특정 테스트
@@ -679,6 +732,7 @@ class TestcontainersConfig {
 **Angular-style (improved) - 한국어 사용**
 
 ### Format
+
 ```
 <type>(<scope>): <한국어 요약>
 
@@ -690,6 +744,7 @@ BREAKING CHANGE: 설명 (있을 경우만)
 ```
 
 ### Types
+
 - `feat`: 새로운 기능
 - `fix`: 버그 수정
 - `refactor`: 리팩토링 (기능 변경 없음)
@@ -702,6 +757,7 @@ BREAKING CHANGE: 설명 (있을 경우만)
 - `build`: 빌드 시스템 변경
 
 ### Rules
+
 1. **scope**: 소문자, 선택사항 (`auth`, `common`, `user`, `test` 등)
 2. **제목**: 한국어, 명령형, 마침표 없음, 72자 이하
 3. **본문**: 파일 단위 변경사항 (`add:`, `modify:`, `delete:`) + 로직 설명
@@ -709,6 +765,7 @@ BREAKING CHANGE: 설명 (있을 경우만)
 5. **Co-Authored-By 절대 금지**
 
 ### Examples
+
 ```
 feat(auth): token refresh, rotate 기능 구현
 
@@ -734,6 +791,7 @@ fix(common): UserMetadataFilter ThreadLocal 메모리 누수 수정
 ## Important Rules
 
 ### 🚨 절대 금지 사항
+
 1. **Co-Authored-By 금지** - 커밋 메시지에 공동 작성자/협력자 표기 절대 추가 금지
 2. **불필요한 주석 금지** - AI 생성 주석, 자명한 설명 주석 금지
 3. **비밀 정보 커밋 금지** - 시크릿 키, 비밀번호, API 토큰 등 민감정보 절대 커밋 금지
@@ -741,6 +799,7 @@ fix(common): UserMetadataFilter ThreadLocal 메모리 누수 수정
 5. **버전 하드코딩 금지** - build.gradle.kts 상단에 `val` 변수로 버전 관리 (단, plugins 블록 제외)
 
 ### ✅ 필수 준수 사항
+
 1. **기존 패턴 준수** - 새 코드는 반드시 위 컨벤션과 기존 코드 패턴 따름
 2. **한국어 커밋** - 커밋 메시지 제목/본문 모두 한국어 사용
 3. **테스트 작성** - 새 기능은 반드시 단위 테스트 포함
@@ -749,25 +808,26 @@ fix(common): UserMetadataFilter ThreadLocal 메모리 누수 수정
 6. **ThreadLocal cleanup** - ThreadLocal 사용 시 `try-finally`로 반드시 정리
 7. **CLAUDE.md 동기화** - 모든 작업 과정 중 그리고 종료 시점에 CLAUDE.md와 실제 코드 간 불일치가 있으면 사용자에게 질문 후 최신 정보로 지속적으로 업데이트
 8. **BP/레퍼런스 조사 (필수)** - 구현 전 **WebSearch 또는 mcp__fetch__fetch 도구 사용 필수**
-   - 공식 문서 최신 버전 확인 (Spring Boot, Kotlin, Kotest 등)
-   - Best Practice 검색 (예: "Kotlin service layer best practices 2026")
-   - 레퍼런스 구현 확인 (GitHub 검색, Stack Overflow)
-   - 보안 취약점 체크 (OWASP 가이드라인)
-   - **구현 후가 아닌 설계 단계에서 조사 수행**
+    - 공식 문서 최신 버전 확인 (Spring Boot, Kotlin, Kotest 등)
+    - Best Practice 검색 (예: "Kotlin service layer best practices 2026")
+    - 레퍼런스 구현 확인 (GitHub 검색, Stack Overflow)
+    - 보안 취약점 체크 (OWASP 가이드라인)
+    - **구현 후가 아닌 설계 단계에서 조사 수행**
 9. **모호한 사항 즉시 질의 (추측 금지)** - 불확실한 사항은 구현 전 **반드시** 사용자에게 질문
-   - **네이밍**: 클래스/메서드/변수명이 애매할 때
-   - **API 설계**: 엔드포인트 구조, 파라미터 형식, 응답 포맷
-   - **에러 처리**: 어떤 Exception을 던질지, errorCode는 무엇인지
-   - **테스트 범위**: 어디까지 테스트할지, 통합 vs 단위
-   - **설정 값**: 기본값, TTL, pool size 등
-   - **⚠️ 추측으로 진행 금지**: "아마 이럴 것 같다"는 금물, 반드시 확인
-   - **AskUserQuestion 도구 적극 활용**
+    - **네이밍**: 클래스/메서드/변수명이 애매할 때
+    - **API 설계**: 엔드포인트 구조, 파라미터 형식, 응답 포맷
+    - **에러 처리**: 어떤 Exception을 던질지, errorCode는 무엇인지
+    - **테스트 범위**: 어디까지 테스트할지, 통합 vs 단위
+    - **설정 값**: 기본값, TTL, pool size 등
+    - **⚠️ 추측으로 진행 금지**: "아마 이럴 것 같다"는 금물, 반드시 확인
+    - **AskUserQuestion 도구 적극 활용**
 
 ---
 
 ## Version Management
 
 **build.gradle.kts 상단에서 중앙 관리**
+
 ```kotlin
 val kotlinLoggingJvmVersion = "7.0.3"
 val lokiLogbackAppenderVersion = "2.0.3"
@@ -780,6 +840,7 @@ val springdocVersion = "3.0.1"
 ```
 
 **단, plugins 블록은 하드코딩**
+
 ```kotlin
 plugins {
     kotlin("jvm") version "2.3.10"
