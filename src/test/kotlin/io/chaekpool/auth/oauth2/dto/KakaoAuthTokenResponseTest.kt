@@ -95,7 +95,7 @@ class KakaoAuthTokenResponseTest(
 
         When("provider_accounts에 JSONB로 저장 후 조회하면") {
             val userId = UUIDv7.generate()
-            dsl.execute("INSERT INTO users (id) VALUES (?)", userId)
+            dsl.execute("INSERT INTO users (id, handle) VALUES (?, ?)", userId, "user_testdb01")
             val providerId = dsl.fetchOne(
                 "SELECT id FROM auth_providers WHERE provider_name = 'KAKAO'"
             )!!.get(0, UUID::class.java)

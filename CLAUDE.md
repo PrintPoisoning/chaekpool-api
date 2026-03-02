@@ -93,7 +93,7 @@ io.chaekpool/
 │   ├── logger/              # SingleLineFeignLogger
 │   ├── provider/            # CryptoProvider
 │   ├── serializer/          # EncryptedStringSerializer, EncryptedStringDeserializer (@Component + DI)
-│   └── util/                # AssertionExtension, UserMetadataExtractor
+│   └── util/                # AssertionExtension, HandleGenerator, UserMetadataExtractor
 └── user/                    # 사용자 관리
     ├── controller/          # UserController
     ├── dto/                 # UserResponse
@@ -123,7 +123,7 @@ src/test/kotlin/
     │   ├── handler/             # GlobalExceptionHandlerTest
     │   ├── logger/              # SingleLineFeignLoggerTest
     │   ├── provider/            # CryptoProviderTest
-    │   └── util/                # AssertionExtensionTest, UserMetadataExtractorTest, MaskingUtilTest, UUIDv7Test
+    │   └── util/                # AssertionExtensionTest, HandleGeneratorTest, UserMetadataExtractorTest, MaskingUtilTest, UUIDv7Test
     ├── user/
     │   └── service/             # UserServiceTest
     └── ChaekpoolApplicationTests.kt  # Spring Context 로드 테스트
@@ -163,6 +163,7 @@ src/test/kotlin/
 
 - **API 경로**: `/api/v1/...`
 - **ID generate**: UUID version 7 (시간 기반 + 랜덤) - postgreSQL `DEFAULT uuidv7()`, kotlin `UUIDv7.generate()`
+- **Handle generate**: `user_` + 8자리 랜덤 영숫자(소문자) - `HandleGenerator.generate()`, UNIQUE 제약
 - **Database**: PostgreSQL 18.2 + jOOQ (Type-safe SQL)
 - **Migration**: Flyway 11.14 (`src/main/resources/db/migration`)
 - **Cache/Session**: Valkey 9.0.2 (Redis 호환) - RefreshToken, TokenBlacklist 저장
@@ -244,8 +245,9 @@ class UserService(  // ✅ 생성자 주입
 
 ```kotlin
 data class UserResponse(
-    @param:JsonProperty("user_id") val userId: Long,
-    @param:JsonProperty("nickname") val nickname: String
+    @param:JsonProperty("nickname") val nickname: String?,
+    @param:JsonProperty("handle") val handle: String,
+    @param:JsonProperty("thumbnail_image_url") val thumbnailImageUrl: String?
 )  // ✅ snake_case로 JSON 매핑
 ```
 

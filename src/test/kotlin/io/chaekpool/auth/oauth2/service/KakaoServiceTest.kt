@@ -92,7 +92,7 @@ class KakaoServiceTest : BehaviorSpec({
                     properties = null,
                     kakaoAccount = null
                 )
-                val newUser = Users(id = newUserId)
+                val newUser = Users(id = newUserId, handle = "user_test1234")
                 val tokenPair = TokenPair("access-token", "refresh-token")
 
                 every { kakaoAuthClient.postOAuthToken(any(), any(), any(), any(), any()) } returns kakaoToken
@@ -106,6 +106,7 @@ class KakaoServiceTest : BehaviorSpec({
                         kakaoId.toString()
                     )
                 } returns null
+                every { userRepository.existsByHandle(any()) } returns false
                 every { userRepository.save(any()) } returns newUser
                 every { providerAccountRepository.saveProviderAccount(any(), any(), any(), any(), any()) } just runs
                 every { userRepository.updateLastLoginAt(newUserId) } returns 1

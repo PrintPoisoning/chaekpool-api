@@ -33,8 +33,10 @@ class UserServiceTest : BehaviorSpec({
                 val userPojo = Users(
                     id = userId,
                     email = "test@example.com",
-                    username = "testuser",
+                    nickname = "testuser",
+                    handle = "user_abc12345",
                     profileImageUrl = "https://example.com/profile.jpg",
+                    thumbnailImageUrl = "https://example.com/thumb.jpg",
                     visibility = UserVisibilityType.PUBLIC,
                     status = UserStatusType.ACTIVE,
                     lastLoginAt = null,
@@ -47,8 +49,10 @@ class UserServiceTest : BehaviorSpec({
                 val result = userService.getUser(userId)
 
                 result.email shouldBe "test@example.com"
-                result.username shouldBe "testuser"
+                result.nickname shouldBe "testuser"
+                result.handle shouldBe "user_abc12345"
                 result.profileImageUrl shouldBe "https://example.com/profile.jpg"
+                result.thumbnailImageUrl shouldBe "https://example.com/thumb.jpg"
                 result.visibility shouldBe "PUBLIC"
                 result.status shouldBe "ACTIVE"
             }
