@@ -63,6 +63,7 @@ spring:
             loggerLevel: BASIC
 
 server:
+  forward-headers-strategy: framework
   shutdown: graceful
   compression:
     enabled: true
