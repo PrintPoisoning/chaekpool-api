@@ -42,17 +42,17 @@ chown api:api "$JAR"
 rc-service api start
 
 # Health check
-for i in $(seq 1 6); do
+for i in $(seq 1 10); do
     if wget -q -O /dev/null http://localhost:8080/actuator/health 2>/dev/null; then
-        echo "[DEPLOY] Health check passed (attempt ${i}, $((i*5))s elapsed)"
+        echo "[DEPLOY] Health check passed (attempt ${i}, $((i*6))s elapsed)"
         exit 0
     fi
-    echo "[DEPLOY] Waiting for API to start... (attempt ${i}/6)"
-    sleep 5
+    echo "[DEPLOY] Waiting for API to start... (attempt ${i}/10)"
+    sleep 6
 done
 
 # Health check failed - show diagnostic info
-echo "[DEPLOY] Health check failed after 30s"
+echo "[DEPLOY] Health check failed after 60s"
 echo "[DEPLOY] --- API log (last 30 lines) ---"
 tail -30 "$LOG" 2>/dev/null || echo "[DEPLOY] No log file found at $LOG"
 echo "[DEPLOY] --- Service status ---"
