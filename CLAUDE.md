@@ -262,6 +262,36 @@ data class JwtProperties(
 )  // ✅ data class + prefix
 ```
 
+**Repository 메서드 네이밍**
+
+- jOOQ 커스텀 Repository는 **Spring Data 인터페이스 네이밍** 채용
+- `find*`, `save`, `delete*`, `exists*`, `count*`, `update*`
+- Spring Data Redis(`RefreshTokenRepository`) 등과 프로젝트 전체 일관성 유지
+
+```kotlin
+// ✅ Spring Data 네이밍
+fun findById(userId: UUID): Users?
+fun save(user: Users): Users          // upsert (ON CONFLICT DO UPDATE)
+fun existsByHandle(handle: String): Boolean
+fun updateLastLoginAt(userId: UUID): Int
+
+// ❌ DML 직접 네이밍 금지
+fun selectById(userId: UUID): Users?
+fun insert(user: Users): Users
+```
+
+**Null 체크**
+
+```kotlin
+// ✅ Objects 유틸리티 사용
+if (Objects.isNull(value)) { ... }
+if (Objects.nonNull(value)) { ... }
+
+// ❌ Kotlin null 체크 직접 사용 금지
+if (value == null) { ... }
+if (value != null) { ... }
+```
+
 ---
 
 ### 2. 예외 처리
