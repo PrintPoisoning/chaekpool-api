@@ -100,7 +100,7 @@ class KakaoAuthTokenResponseTest(
                 "SELECT id FROM auth_providers WHERE provider_name = 'KAKAO'"
             )!!.get(0, UUID::class.java)
 
-            providerAccountRepository.saveProviderAccount(
+            providerAccountRepository.save(
                 userId = userId,
                 providerId = providerId,
                 accountId = "test-account-id-${UUIDv7.generate()}",

@@ -129,7 +129,7 @@ class KakaoService(
             )
         )
 
-        providerAccountRepository.saveProviderAccount(
+        providerAccountRepository.save(
             userId = newUser.id!!,
             providerId = providerId,
             accountId = kakaoId,

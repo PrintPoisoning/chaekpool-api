@@ -31,7 +31,7 @@ class ProviderAccountRepository(
             .and(PROVIDER_ACCOUNTS.ACCOUNT_ID.eq(accountId))
             .fetchOneInto(ProviderAccounts::class.java)
 
-    fun saveProviderAccount(
+    fun save(
         userId: UUID,
         providerId: UUID,
         accountId: String,
@@ -48,6 +48,11 @@ class ProviderAccountRepository(
             .set(PROVIDER_ACCOUNTS.ACCOUNT_ID, accountId)
             .set(PROVIDER_ACCOUNTS.ACCOUNT_REGISTRY, accountRegistryJson)
             .set(PROVIDER_ACCOUNTS.AUTH_REGISTRY, authRegistryJson)
+            .onConflict(PROVIDER_ACCOUNTS.USER_ID, PROVIDER_ACCOUNTS.PROVIDER_ID)
+            .doUpdate()
+            .set(PROVIDER_ACCOUNTS.ACCOUNT_REGISTRY, accountRegistryJson)
+            .set(PROVIDER_ACCOUNTS.AUTH_REGISTRY, authRegistryJson)
+            .set(PROVIDER_ACCOUNTS.UPDATED_AT, LocalDateTime.now())
             .execute()
     }
 

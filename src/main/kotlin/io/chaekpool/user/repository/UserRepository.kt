@@ -5,6 +5,7 @@ import io.chaekpool.generated.jooq.tables.references.USERS
 import org.jooq.DSLContext
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
+import java.util.Objects
 import java.util.UUID
 
 @Repository
@@ -27,25 +28,27 @@ class UserRepository(private val dsl: DSLContext) {
             .fetchOneInto(Users::class.java)
 
     fun save(user: Users): Users {
-        val generatedId = dsl
+        var step = dsl
             .insertInto(USERS)
             .set(USERS.EMAIL, user.email)
             .set(USERS.NICKNAME, user.nickname)
             .set(USERS.HANDLE, user.handle)
             .set(USERS.PROFILE_IMAGE_URL, user.profileImageUrl)
             .set(USERS.THUMBNAIL_IMAGE_URL, user.thumbnailImageUrl)
-            .returning(USERS.ID)
-            .fetchOne()
-            ?.id
 
-        return Users(
-            id = generatedId,
-            email = user.email,
-            nickname = user.nickname,
-            handle = user.handle,
-            profileImageUrl = user.profileImageUrl,
-            thumbnailImageUrl = user.thumbnailImageUrl
-        )
+        if (Objects.nonNull(user.id)) {
+            step = step.set(USERS.ID, user.id)
+        }
+
+        return step
+            .onConflict(USERS.ID)
+            .doUpdate()
+            .set(USERS.NICKNAME, user.nickname)
+            .set(USERS.PROFILE_IMAGE_URL, user.profileImageUrl)
+            .set(USERS.THUMBNAIL_IMAGE_URL, user.thumbnailImageUrl)
+            .set(USERS.UPDATED_AT, LocalDateTime.now())
+            .returning()
+            .fetchOneInto(Users::class.java)!!
     }
 
     fun existsByHandle(handle: String): Boolean =

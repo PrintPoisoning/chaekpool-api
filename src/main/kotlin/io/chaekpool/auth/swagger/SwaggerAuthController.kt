@@ -97,7 +97,7 @@ class SwaggerAuthController(
                     thumbnailImageUrl = kakaoAccount.kakaoAccount?.profile?.thumbnailImageUrl
                 )
             )
-            providerAccountRepository.saveProviderAccount(
+            providerAccountRepository.save(
                 userId = newUser.id!!,
                 providerId = providerId,
                 accountId = accountId,

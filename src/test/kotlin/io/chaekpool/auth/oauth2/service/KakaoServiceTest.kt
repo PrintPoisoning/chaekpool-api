@@ -108,7 +108,7 @@ class KakaoServiceTest : BehaviorSpec({
                 } returns null
                 every { userRepository.existsByHandle(any()) } returns false
                 every { userRepository.save(any()) } returns newUser
-                every { providerAccountRepository.saveProviderAccount(any(), any(), any(), any(), any()) } just runs
+                every { providerAccountRepository.save(any(), any(), any(), any(), any()) } just runs
                 every { userRepository.updateLastLoginAt(newUserId) } returns 1
                 every { tokenManager.createTokenPair(newUserId, AuthProvider.KAKAO) } returns tokenPair
                 every { tokenManager.saveRefreshToken(newUserId, tokenPair.refreshToken) } returns mockk()
@@ -118,7 +118,7 @@ class KakaoServiceTest : BehaviorSpec({
                 result shouldBe tokenPair
                 verify(exactly = 1) { userRepository.save(any()) }
                 verify(exactly = 1) {
-                    providerAccountRepository.saveProviderAccount(
+                    providerAccountRepository.save(
                         newUserId, providerId, kakaoId.toString(), kakaoAccount, kakaoToken
                     )
                 }
