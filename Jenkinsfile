@@ -34,7 +34,7 @@ pipeline {
             when { branch 'main' }
             steps {
                 sh 'apk add --no-cache openssh-client'
-                withCredentials([file(credentialsId: 'api-env-file', variable: 'API_ENV_FILE')]) {
+                withCredentials([file(credentialsId: "api-env-${params.DEPLOY_ENV}", variable: 'API_ENV_FILE')]) {
                     sshagent(credentials: ['api-deploy-ssh']) {
                         sh 'chmod +x ci/deploy.sh && ci/deploy.sh'
                     }
