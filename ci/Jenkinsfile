@@ -31,7 +31,6 @@ pipeline {
         }
 
         stage('Deploy') {
-            when { branch 'main' }
             steps {
                 sh 'apk add --no-cache openssh-client'
                 withCredentials([file(credentialsId: "api-env-${params.DEPLOY_ENV}", variable: 'API_ENV_FILE')]) {
