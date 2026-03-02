@@ -17,7 +17,7 @@ class UUIDv7Test : BehaviorSpec({
                 val uuid = UUIDv7.generate()
 
                 uuid.version() shouldBe 7
-                UUIDv7.isUuidV7(uuid) shouldBe true
+                UUIDv7.isVersion7(uuid) shouldBe true
             }
 
             Then("시간순으로 정렬된다") {
@@ -76,19 +76,19 @@ class UUIDv7Test : BehaviorSpec({
     }
 
     Given("UUID 버전 확인 시") {
-        When("isUuidV7()을 호출하면") {
+        When("isVersion7()을 호출하면") {
             Then("UUID v7이면 true를 반환한다") {
                 val uuid = UUIDv7.generate()
-                UUIDv7.isUuidV7(uuid) shouldBe true
+                UUIDv7.isVersion7(uuid) shouldBe true
             }
 
             Then("UUID v4이면 false를 반환한다") {
                 val uuidV4 = UUID.randomUUID()
-                UUIDv7.isUuidV7(uuidV4) shouldBe false
+                UUIDv7.isVersion7(uuidV4) shouldBe false
             }
 
             Then("null이면 false를 반환한다") {
-                UUIDv7.isUuidV7(null) shouldBe false
+                UUIDv7.isVersion7(null) shouldBe false
             }
         }
     }
