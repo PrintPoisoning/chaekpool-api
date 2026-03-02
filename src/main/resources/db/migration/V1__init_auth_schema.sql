@@ -4,15 +4,17 @@ CREATE TYPE user_status_type AS ENUM ('ACTIVE', 'DORMANT', 'LEAVED', 'BANNED');
 
 CREATE TABLE users
 (
-    id                UUID PRIMARY KEY              DEFAULT uuidv7(),
-    email             VARCHAR(255) UNIQUE,
-    username          VARCHAR(100) UNIQUE,
-    profile_image_url TEXT,
-    visibility        user_visibility_type NOT NULL DEFAULT 'PUBLIC',
-    status            user_status_type     NOT NULL DEFAULT 'ACTIVE',
-    last_login_at     TIMESTAMP,
-    created_at        TIMESTAMP                     DEFAULT CURRENT_TIMESTAMP,
-    updated_at        TIMESTAMP
+    id                  UUID PRIMARY KEY              DEFAULT uuidv7(),
+    email               VARCHAR(255) UNIQUE,
+    nickname            VARCHAR(100),
+    handle              VARCHAR(30) UNIQUE   NOT NULL,
+    profile_image_url   TEXT,
+    thumbnail_image_url TEXT,
+    visibility          user_visibility_type NOT NULL DEFAULT 'PUBLIC',
+    status              user_status_type     NOT NULL DEFAULT 'ACTIVE',
+    last_login_at       TIMESTAMP,
+    created_at          TIMESTAMP                     DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP
 );
 
 CREATE TABLE auth_providers
