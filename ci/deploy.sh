@@ -28,6 +28,7 @@ $SSH <<'REMOTE_SCRIPT'
 set -eu
 
 JAR="/opt/api/api.jar"
+LOG="/var/log/api/api.log"
 
 # Stop
 rc-service api stop 2>/dev/null || true
@@ -43,14 +44,22 @@ rc-service api start
 # Health check
 for i in $(seq 1 30); do
     if wget -q -O /dev/null http://localhost:8080/actuator/health 2>/dev/null; then
-        echo "[DEPLOY] Health check passed (${i}x2s)"
+        echo "[DEPLOY] Health check passed (attempt ${i}, $((i*2))s elapsed)"
         exit 0
     fi
+    echo "[DEPLOY] Waiting for API to start... (attempt ${i}/30)"
     sleep 2
 done
 
+# Health check failed - show diagnostic info
+echo "[DEPLOY] Health check failed after 60s"
+echo "[DEPLOY] --- API log (last 30 lines) ---"
+tail -30 "$LOG" 2>/dev/null || echo "[DEPLOY] No log file found at $LOG"
+echo "[DEPLOY] --- Service status ---"
+rc-service api status 2>/dev/null || true
+
 # Rollback
-echo "[DEPLOY] Health check failed, rolling back..."
+echo "[DEPLOY] Rolling back..."
 rc-service api stop 2>/dev/null || true
 if [ -f "${JAR}.bak" ]; then
     mv "${JAR}.bak" "$JAR"

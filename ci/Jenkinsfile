@@ -1,27 +1,21 @@
 pipeline {
     agent {
-        docker {
-            image 'gradle:jdk25-alpine'
+        dockerfile {
+            filename 'ci/Dockerfile'
             args '-u 0:0 -v gradle-cache:/root/.gradle -v /var/run/docker.sock:/var/run/docker.sock'
         }
     }
 
     options {
-        timeout(time: 15, unit: 'MINUTES')
+        timeout(time: 10, unit: 'MINUTES')
         timestamps()
         disableConcurrentBuilds()
     }
 
     stages {
-        stage('Build') {
+        stage('Build & Test') {
             steps {
-                sh './gradlew clean build -x test --no-daemon'
-            }
-        }
-
-        stage('Test') {
-            steps {
-                sh './gradlew test --no-daemon'
+                sh './gradlew build'
             }
             post {
                 always {
@@ -32,7 +26,6 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                sh 'apk add --no-cache openssh-client'
                 withCredentials([file(credentialsId: 'api-env', variable: 'API_ENV_FILE')]) {
                     sshagent(credentials: ['api-deploy-ssh']) {
                         sh 'chmod +x ci/deploy.sh && ci/deploy.sh'
