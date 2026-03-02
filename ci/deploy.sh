@@ -4,7 +4,7 @@ set -euo pipefail
 # --- Configuration ---
 HOST="10.1.0.140"
 USER="root"
-JAR_PATH="/opt/kopring/chaekpool.jar"
+JAR_PATH="/opt/api/chaekpool.jar"
 
 SSH="ssh -o StrictHostKeyChecking=no ${USER}@${HOST}"
 SCP="scp -o StrictHostKeyChecking=no"
@@ -22,18 +22,18 @@ echo "[DEPLOY] Deploying..."
 $SSH <<'REMOTE_SCRIPT'
 set -eu
 
-JAR="/opt/kopring/chaekpool.jar"
+JAR="/opt/api/chaekpool.jar"
 
 # Stop
-rc-service kopring stop 2>/dev/null || true
+rc-service api stop 2>/dev/null || true
 
 # Backup + Swap
 [ -f "$JAR" ] && mv "$JAR" "${JAR}.bak"
 mv "${JAR}.new" "$JAR"
-chown kopring:kopring "$JAR"
+chown api:api "$JAR"
 
 # Start
-rc-service kopring start
+rc-service api start
 
 # Health check
 for i in $(seq 1 30); do
@@ -46,11 +46,11 @@ done
 
 # Rollback
 echo "[DEPLOY] Health check failed, rolling back..."
-rc-service kopring stop 2>/dev/null || true
+rc-service api stop 2>/dev/null || true
 if [ -f "${JAR}.bak" ]; then
     mv "${JAR}.bak" "$JAR"
-    chown kopring:kopring "$JAR"
-    rc-service kopring start
+    chown api:api "$JAR"
+    rc-service api start
     echo "[DEPLOY] Rolled back to previous version"
 fi
 exit 1

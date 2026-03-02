@@ -34,7 +34,7 @@ pipeline {
             when { branch 'main' }
             steps {
                 sh 'apk add --no-cache openssh-client'
-                sshagent(credentials: ['kopring-deploy-ssh']) {
+                sshagent(credentials: ['api-deploy-ssh']) {
                     sh 'chmod +x ci/deploy.sh && ci/deploy.sh'
                 }
             }
