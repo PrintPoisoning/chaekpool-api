@@ -18,8 +18,10 @@ class UserService(private val userRepository: UserRepository) {
 
         return UserResponse(
             email = user.email,
-            username = user.username,
+            nickname = user.nickname,
+            handle = user.handle,
             profileImageUrl = user.profileImageUrl,
+            thumbnailImageUrl = user.thumbnailImageUrl,
             visibility = user.visibility!!.name,
             status = user.status!!.name
         )

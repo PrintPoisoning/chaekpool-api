@@ -11,6 +11,7 @@ import io.chaekpool.auth.oauth2.repository.AuthProviderRepository
 import io.chaekpool.auth.oauth2.repository.ProviderAccountRepository
 import io.chaekpool.auth.token.dto.TokenPair
 import io.chaekpool.auth.token.service.TokenManager
+import io.chaekpool.common.util.HandleGenerator
 import io.chaekpool.common.util.notNullOrThrow
 import io.chaekpool.user.repository.UserRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -121,8 +122,10 @@ class KakaoService(
         val newUser = userRepository.save(
             io.chaekpool.generated.jooq.tables.pojos.Users(
                 email = kakaoUser.kakaoAccount?.email,
-                username = kakaoUser.kakaoAccount?.profile?.nickname,
-                profileImageUrl = kakaoUser.kakaoAccount?.profile?.profileImageUrl
+                nickname = kakaoUser.kakaoAccount?.profile?.nickname,
+                handle = HandleGenerator.generateUnique { userRepository.existsByHandle(it) },
+                profileImageUrl = kakaoUser.kakaoAccount?.profile?.profileImageUrl,
+                thumbnailImageUrl = kakaoUser.kakaoAccount?.profile?.thumbnailImageUrl
             )
         )
 

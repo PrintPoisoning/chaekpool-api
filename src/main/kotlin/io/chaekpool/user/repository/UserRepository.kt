@@ -15,8 +15,10 @@ class UserRepository(private val dsl: DSLContext) {
             .select(
                 USERS.ID,
                 USERS.EMAIL,
-                USERS.USERNAME,
+                USERS.NICKNAME,
+                USERS.HANDLE,
                 USERS.PROFILE_IMAGE_URL,
+                USERS.THUMBNAIL_IMAGE_URL,
                 USERS.VISIBILITY,
                 USERS.STATUS
             )
@@ -28,8 +30,10 @@ class UserRepository(private val dsl: DSLContext) {
         val generatedId = dsl
             .insertInto(USERS)
             .set(USERS.EMAIL, user.email)
-            .set(USERS.USERNAME, user.username)
+            .set(USERS.NICKNAME, user.nickname)
+            .set(USERS.HANDLE, user.handle)
             .set(USERS.PROFILE_IMAGE_URL, user.profileImageUrl)
+            .set(USERS.THUMBNAIL_IMAGE_URL, user.thumbnailImageUrl)
             .returning(USERS.ID)
             .fetchOne()
             ?.id
@@ -37,10 +41,19 @@ class UserRepository(private val dsl: DSLContext) {
         return Users(
             id = generatedId,
             email = user.email,
-            username = user.username,
-            profileImageUrl = user.profileImageUrl
+            nickname = user.nickname,
+            handle = user.handle,
+            profileImageUrl = user.profileImageUrl,
+            thumbnailImageUrl = user.thumbnailImageUrl
         )
     }
+
+    fun existsByHandle(handle: String): Boolean =
+        dsl
+            .selectCount()
+            .from(USERS)
+            .where(USERS.HANDLE.eq(handle))
+            .fetchOne(0, Int::class.java)!! > 0
 
     fun updateLastLoginAt(userId: UUID): Int =
         dsl

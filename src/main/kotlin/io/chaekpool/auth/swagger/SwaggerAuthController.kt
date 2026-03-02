@@ -10,6 +10,7 @@ import io.chaekpool.auth.oauth2.repository.AuthProviderRepository
 import io.chaekpool.auth.oauth2.repository.ProviderAccountRepository
 import io.chaekpool.auth.token.provider.CookieProvider
 import io.chaekpool.auth.token.service.TokenManager
+import io.chaekpool.common.util.HandleGenerator
 import io.chaekpool.common.util.notNullOrThrow
 import io.chaekpool.generated.jooq.tables.pojos.Users
 import io.chaekpool.user.repository.UserRepository
@@ -86,11 +87,14 @@ class SwaggerAuthController(
         val existingUserId = providerAccountRepository.findByProviderIdAndAccountId(providerId, accountId)?.userId
 
         val userId = if (Objects.isNull(existingUserId)) {
+            val handle = HandleGenerator.generateUnique { userRepository.existsByHandle(it) }
             val newUser = userRepository.save(
                 Users(
                     email = kakaoAccount.kakaoAccount?.email,
-                    username = kakaoAccount.kakaoAccount?.profile?.nickname,
-                    profileImageUrl = kakaoAccount.kakaoAccount?.profile?.profileImageUrl
+                    nickname = kakaoAccount.kakaoAccount?.profile?.nickname,
+                    handle = handle,
+                    profileImageUrl = kakaoAccount.kakaoAccount?.profile?.profileImageUrl,
+                    thumbnailImageUrl = kakaoAccount.kakaoAccount?.profile?.thumbnailImageUrl
                 )
             )
             providerAccountRepository.saveProviderAccount(
@@ -142,4 +146,5 @@ class SwaggerAuthController(
             .build()
             .toUriString()
     }
+
 }
