@@ -4,7 +4,7 @@ set -euo pipefail
 # --- Configuration ---
 HOST="10.1.0.140"
 USER="root"
-JAR_PATH="/opt/api/chaekpool.jar"
+JAR_PATH="/opt/api/api.jar"
 
 SSH="ssh -o StrictHostKeyChecking=no ${USER}@${HOST}"
 SCP="scp -o StrictHostKeyChecking=no"
@@ -13,16 +13,21 @@ SCP="scp -o StrictHostKeyChecking=no"
 JAR_FILE=$(ls build/libs/chaekpool-*.jar | grep -v plain | head -1)
 echo "[DEPLOY] Found JAR: ${JAR_FILE}"
 
-# --- Upload ---
-echo "[DEPLOY] Uploading to ${HOST}..."
+# --- Upload JAR ---
+echo "[DEPLOY] Uploading JAR to ${HOST}..."
 $SCP "$JAR_FILE" "${USER}@${HOST}:${JAR_PATH}.new"
+
+# --- Deploy env file ---
+echo "[DEPLOY] Deploying environment file..."
+$SCP "$API_ENV_FILE" "${USER}@${HOST}:/etc/api/.env"
+$SSH "chown api:api /etc/api/.env && chmod 0600 /etc/api/.env"
 
 # --- Deploy (atomic swap + health check + rollback) ---
 echo "[DEPLOY] Deploying..."
 $SSH <<'REMOTE_SCRIPT'
 set -eu
 
-JAR="/opt/api/chaekpool.jar"
+JAR="/opt/api/api.jar"
 
 # Stop
 rc-service api stop 2>/dev/null || true
