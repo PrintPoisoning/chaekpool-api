@@ -141,7 +141,9 @@ tasks.named("compileKotlin") {
 }
 
 tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
-    environment = System.getenv()
+    doFirst {
+        environment(System.getenv())
+    }
 }
 
 // =============================================================================
