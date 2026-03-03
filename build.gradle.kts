@@ -27,7 +27,6 @@ plugins {
     kotlin("plugin.spring") version "2.3.10"
     id("org.springframework.boot") version "4.0.2"
     id("io.spring.dependency-management") version "1.1.7"
-
 }
 
 group = "io.chaekpool"
@@ -165,38 +164,63 @@ tasks.register<Delete>("jooqClean") {
     delete(jooqOutputDir)
 }
 
-tasks.register("jooqGenerate") {
-    group = "jooq"
-    description = "Generate jOOQ code from database schema using Testcontainers"
+@CacheableTask
+abstract class JooqGenerateTask : DefaultTask() {
 
-    inputs.files(fileTree("src/main/resources/db/migration") { include("**/*.sql") })
-    outputs.dir(jooqOutputDir)
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val migrationDir: DirectoryProperty
 
-    doLast {
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @TaskAction
+    fun generate() {
         val postgres = org.testcontainers.postgresql.PostgreSQLContainer("postgres:18.2-alpine3.23")
         postgres.start()
 
         try {
-            org.flywaydb.core.Flyway.configure().dataSource(postgres.jdbcUrl, postgres.username, postgres.password)
-                .locations("filesystem:src/main/resources/db/migration").load().migrate()
+            org.flywaydb.core.Flyway.configure()
+                .dataSource(postgres.jdbcUrl, postgres.username, postgres.password)
+                .locations("filesystem:${migrationDir.get().asFile.absolutePath}")
+                .load()
+                .migrate()
 
             org.jooq.codegen.GenerationTool.generate(
-                org.jooq.meta.jaxb.Configuration().withLogging(Logging.INFO).withJdbc(
-                        org.jooq.meta.jaxb.Jdbc().withDriver("org.postgresql.Driver").withUrl(postgres.jdbcUrl)
-                            .withUser(postgres.username).withPassword(postgres.password)
-                    ).withGenerator(
-                        org.jooq.meta.jaxb.Generator().withName("org.jooq.codegen.KotlinGenerator").withDatabase(
-                                org.jooq.meta.jaxb.Database().withName("org.jooq.meta.postgres.PostgresDatabase")
-                                    .withInputSchema("public").withIncludes(".*").withExcludes("flyway_schema_history")
-                            ).withGenerate(
-                                org.jooq.meta.jaxb.Generate().withDeprecated(false).withRecords(true)
-                                    .withImmutablePojos(true).withFluentSetters(true).withJavaTimeTypes(true)
-                                    .withKotlinNotNullPojoAttributes(true).withKotlinNotNullRecordAttributes(true)
-//                                    .withKotlinDefaultedNullablePojoAttributes(false)
-//                                    .withKotlinDefaultedNullableRecordAttributes(false)
-                            ).withTarget(
-                                org.jooq.meta.jaxb.Target().withPackageName("io.chaekpool.generated.jooq")
-                                    .withDirectory(jooqOutputDir.get().toString()).withClean(true)
+                org.jooq.meta.jaxb.Configuration()
+                    .withLogging(Logging.INFO)
+                    .withJdbc(
+                        org.jooq.meta.jaxb.Jdbc()
+                            .withDriver("org.postgresql.Driver")
+                            .withUrl(postgres.jdbcUrl)
+                            .withUser(postgres.username)
+                            .withPassword(postgres.password)
+                    )
+                    .withGenerator(
+                        org.jooq.meta.jaxb.Generator()
+                            .withName("org.jooq.codegen.KotlinGenerator")
+                            .withDatabase(
+                                org.jooq.meta.jaxb.Database()
+                                    .withName("org.jooq.meta.postgres.PostgresDatabase")
+                                    .withInputSchema("public")
+                                    .withIncludes(".*")
+                                    .withExcludes("flyway_schema_history")
+                            )
+                            .withGenerate(
+                                org.jooq.meta.jaxb.Generate()
+                                    .withDeprecated(false)
+                                    .withRecords(true)
+                                    .withImmutablePojos(true)
+                                    .withFluentSetters(true)
+                                    .withJavaTimeTypes(true)
+                                    .withKotlinNotNullPojoAttributes(true)
+                                    .withKotlinNotNullRecordAttributes(true)
+                            )
+                            .withTarget(
+                                org.jooq.meta.jaxb.Target()
+                                    .withPackageName("io.chaekpool.generated.jooq")
+                                    .withDirectory(outputDir.get().asFile.absolutePath)
+                                    .withClean(true)
                             )
                     )
             )
@@ -204,4 +228,11 @@ tasks.register("jooqGenerate") {
             postgres.stop()
         }
     }
+}
+
+tasks.register<JooqGenerateTask>("jooqGenerate") {
+    group = "jooq"
+    description = "Generate jOOQ code from database schema using Testcontainers"
+    migrationDir.set(layout.projectDirectory.dir("src/main/resources/db/migration"))
+    outputDir.set(jooqOutputDir)
 }
