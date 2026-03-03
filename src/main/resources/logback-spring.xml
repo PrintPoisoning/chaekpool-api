@@ -42,6 +42,9 @@
             level=%level
             host=${HOSTNAME}
         </labels>
+        <structuredMetadata>
+            * = %%mdc{traceId, spanId}
+        </structuredMetadata>
         <message>
             <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} traceId=%X{traceId:-} spanId=%X{spanId:-} - %msg%n</pattern>
         </message>
