@@ -60,40 +60,43 @@ docker compose -f docker-compose.local.yml down -v
 io.chaekpool/
 ├── auth/                    # 인증/인가 (OAuth, JWT, Token)
 │   ├── annotation/          # @AccessUserId, @RefreshUserId, @AccessToken, @RefreshToken
-│   ├── dto/                 # AuthResponse
+│   │                        # AccessUserIdAnnotationResolver, RefreshUserIdAnnotationResolver, AccessTokenAnnotationResolver, RefreshTokenAnnotationResolver
+│   ├── constant/            # Auth (BEARER_PREFIX, CLAIM_PROVIDER), AuthProvider (CHAEKPOOL, KAKAO)
+│   ├── dto/                 # TokenResponse
 │   ├── swagger/             # Swagger UI 카카오 OAuth 인증 (local/dev 전용)
 │   │                        # SwaggerAuthController (팝업 OAuth → postMessage → JWT)
 │   ├── oauth2/              # Kakao OAuth 로그인
 │   │   ├── client/          # KakaoAuthClient, KakaoApiClient (Feign)
 │   │   ├── config/          # KakaoAuthProperties, OAuth2FeignConfig
 │   │   ├── controller/      # KakaoController (인가 리다이렉트, 콜백, OAuth 토큰 갱신)
-│   │   ├── dto/             # KakaoAuthTokenResponse, KakaoAuthRefreshTokenResponse, KakaoApiAccountResponse 등
-│   │   ├── exception/       # ProviderNotFoundException
-│   │   ├── repository/      # ProviderAccountRepository (jOOQ)
+│   │   ├── dto/             # KakaoAuthTokenResponse, KakaoAuthRefreshTokenResponse, KakaoApiAccountResponse, KakaoApiProperties, KakaoApiProfile, KakaoApiAccount
+│   │   ├── exception/       # ProviderNotFoundException, UserAccountNotFoundException
+│   │   ├── repository/      # ProviderAccountRepository, AuthProviderRepository (jOOQ)
 │   │   └── service/         # KakaoService
 │   └── token/               # JWT 토큰 관리
-│       ├── config/          # JwtProperties
+│       ├── config/          # JwtProperties, CookieProperties
 │       ├── controller/      # TokenController (refresh, rotate, logout)
-│       ├── dto/             # TokenPair, TokenResponse
-│       ├── entity/          # RefreshToken, TokenBlacklist (Redis)
+│       ├── dto/             # TokenPair
+│       ├── entity/          # RefreshTokenEntity, BlacklistEntity (Redis)
 │       ├── exception/       # InvalidToken, TokenExpired, TokenBlacklisted 등
 │       ├── filter/          # JwtAuthenticationFilter
 │       ├── provider/        # JwtProvider, CookieProvider (service/에서 분리)
-│       ├── repository/      # RefreshTokenRepository, TokenBlacklistRepository
+│       ├── repository/      # RefreshTokenRepository, BlacklistRepository
 │       └── service/         # TokenService, TokenManager, BlacklistManager
 ├── common/                  # 공통 기능
-│   ├── config/              # WebSecurityConfig, CorsProperties, MetricsConfig, JacksonConfig, OpenApiConfig, ApiResponseOperationCustomizer
-│   ├── controller/          # CommonController (robots.txt)
-│   ├── dto/                 # ErrorResponse, UserMetadata
+│   ├── config/              # WebSecurityConfig, AuthorizationRulesConfig, SecurityExceptionConfig, CorsConfig, CorsProperties,
+│   │                        # CryptoProperties, WebMvcConfig, JooqConfig, MetricsConfig, JacksonConfig, OpenApiConfig, ApiResponseOperationCustomizer
+│   ├── controller/          # CommonController (robots.txt, healthy)
+│   ├── dto/                 # ApiResponse, ErrorData, UserMetadata
 │   ├── exception/           # ServiceException 계층, ErrorCodeAccessDeniedException, ErrorCodeBadCredentialsException
 │   │   ├── internal/        # BadRequest, NotFound, Forbidden, Conflict, Unauthorized, InternalServerError
-│   │   └── external/        # ExternalServiceException
+│   │   └── external/        # ExternalServiceException, ExternalSystem (enum)
 │   ├── filter/              # AccessLogFilter, UserMetadataFilter/Context
-│   ├── handler/             # GlobalExceptionHandler, ErrorCodeAccessDeniedHandler, ErrorCodeAuthenticationEntryPoint
+│   ├── handler/             # GlobalExceptionHandler, ApiResponseAdvice, FeignErrorDecoder, ErrorCodeAccessDeniedHandler, ErrorCodeAuthenticationEntryPoint
 │   ├── logger/              # SingleLineFeignLogger
 │   ├── provider/            # CryptoProvider
 │   ├── serializer/          # EncryptedStringSerializer, EncryptedStringDeserializer (@Component + DI)
-│   └── util/                # AssertionExtension, HandleGenerator, UserMetadataExtractor
+│   └── util/                # AssertionExtension, HandleGenerator, MaskingUtil, StringExtension, UserMetadataExtractor, UUIDv7
 └── user/                    # 사용자 관리
     ├── controller/          # UserController
     ├── dto/                 # UserResponse
@@ -119,11 +122,12 @@ src/test/kotlin/
     │       ├── provider/        # JwtProviderTest, CookieProviderTest
     │       └── service/         # TokenServiceTest, BlacklistManagerTest
     ├── common/
+    │   ├── config/              # CorsConfigTest
     │   ├── filter/              # AccessLogFilterTest, UserMetadataFilterTest, UserMetadataContextTest
     │   ├── handler/             # GlobalExceptionHandlerTest
     │   ├── logger/              # SingleLineFeignLoggerTest
     │   ├── provider/            # CryptoProviderTest
-    │   └── util/                # AssertionExtensionTest, HandleGeneratorTest, UserMetadataExtractorTest, MaskingUtilTest, UUIDv7Test
+    │   └── util/                # AssertionExtensionTest, HandleGeneratorTest, UserMetadataExtractorTest, MaskingUtilTest, StringExtensionTest, UUIDv7Test
     ├── user/
     │   └── service/             # UserServiceTest
     └── ChaekpoolApplicationTests.kt  # Spring Context 로드 테스트
@@ -165,7 +169,7 @@ src/test/kotlin/
 - **ID generate**: UUID version 7 (시간 기반 + 랜덤) - postgreSQL `DEFAULT uuidv7()`, kotlin `UUIDv7.generate()`
 - **Handle generate**: `user_` + 8자리 랜덤 영숫자(소문자) - `HandleGenerator.generate()`, UNIQUE 제약
 - **Database**: PostgreSQL 18.2 + jOOQ (Type-safe SQL)
-- **Migration**: Flyway 11.14 (`src/main/resources/db/migration`)
+- **Migration**: Flyway 11.14.1 (`src/main/resources/db/migration`)
 - **Cache/Session**: Valkey 9.0.2 (Redis 호환) - RefreshToken, TokenBlacklist 저장
 - **Monitoring**: Prometheus + Loki + Jaeger (OpenTelemetry OTLP) + Grafana
 - **Profile**: `local` (Docker Compose — `docker-compose.local.yml`, spring-boot-docker-compose 자동 실행), `dev` (서버 배포)
@@ -304,7 +308,8 @@ ServiceException (추상)
 │   ├── BadRequestException
 │   ├── NotFoundException
 │   │   ├── UserNotFoundException (user/exception/)
-│   │   └── ProviderNotFoundException (auth/oauth2/exception/)
+│   │   ├── ProviderNotFoundException (auth/oauth2/exception/)
+│   │   └── UserAccountNotFoundException (auth/oauth2/exception/)
 │   ├── ForbiddenException
 │   ├── ConflictException
 │   ├── UnauthorizedException
@@ -313,6 +318,7 @@ ServiceException (추상)
 │   └── ExternalServiceException
 │       ├── ExternalBadRequestException
 │       ├── ExternalForbiddenException
+│       ├── ExternalServerErrorException
 │       └── ExternalUnauthorizedException
 └── auth/token/exception/
     ├── InvalidTokenException (extends UnauthorizedException)
@@ -601,15 +607,6 @@ data class RefreshTokenEntity(
 )
 ```
 
-**Key Changes**:
-
-- Entity name: `RefreshToken` → `RefreshTokenEntity`
-- Hash key: `"refresh_token"` → `"auth:token:refresh"` (namespaced)
-- ID field: `token` → `jti` (JWT standard claim)
-- userId type: `Long` → `UUID`
-- Removed: `createdAt` (Redis TTL handles expiration)
-- Added: Security metadata fields (ip, userAgent, device, platformType)
-
 **Reference**: `src/main/kotlin/io/chaekpool/auth/token/entity/RefreshTokenEntity.kt`
 
 ---
@@ -625,7 +622,8 @@ data class RefreshTokenEntity(
 interface KakaoAuthClient {
     @PostMapping(
         value = ["/oauth/token"],
-        consumes = [MediaType.APPLICATION_JSON_VALUE]
+        consumes = [MediaType.APPLICATION_JSON_VALUE],
+        produces = [MediaType.APPLICATION_JSON_VALUE]
     )
     fun postOAuthToken(
         @RequestParam("grant_type") grantType: String,
@@ -636,13 +634,6 @@ interface KakaoAuthClient {
     ): KakaoAuthTokenResponse
 }
 ```
-
-**Key Changes**:
-
-- Method: `getToken` → `postOAuthToken` (명명 규칙 준수)
-- Parameters: `@RequestBody` → `@RequestParam` (application/json OAuth2 표준)
-- Configuration: `FeignConfig` → `OAuth2FeignConfig` (실제 클래스명)
-- Content-Type: application/json (OAuth2 spec)
 
 **Reference**: `src/main/kotlin/io/chaekpool/auth/oauth2/client/KakaoAuthClient.kt`
 
@@ -660,8 +651,8 @@ interface KakaoAuthClient {
 - Stateless Session (세션 없음)
 - CSRF, FormLogin, HttpBasic 비활성화
 - JWT 기반 인증
-- `/api/v1/auth/oauth2/*/authorize`, `/api/v1/auth/oauth2/*/callback`, `/api/v1/auth/token/refresh`,
-  `/api/v1/auth/swagger/**`, `/swagger-oauth2-ui/**`, `/v3/api-docs/**`, `/swagger-ui/**` 공개, 나머지 인증 필요
+- `/api/v1/common/healthy`, `/api/v1/auth/oauth2/*/authorize`, `/api/v1/auth/oauth2/*/callback`, `/api/v1/auth/token/refresh`,
+  `/api/v1/auth/swagger/**`, `/swagger-oauth2-ui/**`, `/actuator/**`, `/robots.txt`, `/v3/api-docs/**`, `/swagger-ui/**`, `/swagger-ui.html` 공개, 나머지 인증 필요
 
 **필터 체인**
 
@@ -895,10 +886,12 @@ val kotlinLoggingJvmVersion = "7.0.3"
 val lokiLogbackAppenderVersion = "2.0.3"
 val springCloudVersion = "2025.1.1"
 val uaJavaVersion = "1.6.1"
+val uuidGeneratorVersion = "5.2.0"
 val kotestVersion = "6.1.0"
 val mockkVersion = "1.14.9"
 val springmockkVersion = "5.0.1"
 val springdocVersion = "3.0.1"
+val wiremockVersion = "3.13.2"
 ```
 
 **단, plugins 블록은 하드코딩**
