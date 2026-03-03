@@ -13,10 +13,16 @@ pipeline {
     }
 
     stages {
-        stage('Build & Test') {
+        stage('Build') {
             steps {
                 sh 'mkdir -p /root/.gradle/chaekpool-api && ln -sfn /root/.gradle/chaekpool-api .gradle'
-                sh './gradlew build --no-daemon'
+                sh './gradlew assemble --no-daemon'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh './gradlew test --no-daemon --rerun-tasks'
             }
             post {
                 always {
