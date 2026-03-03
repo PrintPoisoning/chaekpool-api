@@ -6,6 +6,10 @@ pipeline {
         }
     }
 
+    environment {
+        GRADLE_USER_HOME = '/root/.gradle'
+    }
+
     options {
         timeout(time: 10, unit: 'MINUTES')
         timestamps()
