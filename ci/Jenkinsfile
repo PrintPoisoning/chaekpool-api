@@ -22,7 +22,7 @@ pipeline {
 
         stage('Test') {
             steps {
-                sh './gradlew test --no-daemon --rerun-tasks'
+                sh './gradlew cleanTest test --no-daemon'
             }
             post {
                 always {
