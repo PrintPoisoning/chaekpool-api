@@ -101,7 +101,7 @@ auth:
       redirect-uri: ${KAKAO_REDIRECT_URI}
 
 loki:
-  url: ${LOKI_URL:http://localhost:3100/loki/api/v1/push}
+  url: ${LOKI_URL}
 
 springdoc:
   api-docs:
@@ -133,7 +133,7 @@ management:
     tracing:
       export:
         otlp:
-          endpoint: ${OTLP_ENDPOINT:http://localhost:4318/v1/traces}
+          endpoint: ${OTLP_ENDPOINT}
   otlp:
     metrics:
       export:
