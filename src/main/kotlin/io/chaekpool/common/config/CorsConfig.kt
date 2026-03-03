@@ -11,8 +11,11 @@ class CorsConfig {
 
     @Bean
     fun corsConfigurationSource(corsProps: CorsProperties): CorsConfigurationSource {
+        val (patterns, origins) = corsProps.allowedOrigins.partition { it.contains("*") }
+
         val configuration = CorsConfiguration().apply {
-            allowedOrigins = corsProps.allowedOrigins
+            allowedOrigins = origins
+            allowedOriginPatterns = patterns
             allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS")
             allowedHeaders = listOf("*")
             allowCredentials = true
