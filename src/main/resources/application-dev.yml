@@ -26,7 +26,7 @@ spring:
       client:
         config:
           default:
-            loggerLevel: BASIC
+            loggerLevel: FULL
 
 springdoc:
   api-docs:
