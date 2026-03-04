@@ -135,26 +135,43 @@ Build Cache와 의존성 캐시는 GRADLE_USER_HOME(`~/.gradle`)에 저장되므
 
 ### 이 프로젝트의 CI 구성 (Jenkins + Docker)
 
-기존 `gradle-cache` Named Volume 내에 프로젝트 캐시 디렉토리를 만들고, 프로젝트의 `.gradle`을 심링크하여 CC를 보존한다.
+호스트 바인드 마운트(`/var/lib/jenkins/.gradle`)를 Docker 이미지의 `GRADLE_USER_HOME`(`/home/gradle/.gradle`)에 마운트하고, 프로젝트의 `.gradle`을 심링크하여 CC를 보존한다.
 
 ```groovy
 // ci/Jenkinsfile
-stage('Build & Test') {
+stage('Build') {
     steps {
-        sh 'mkdir -p /root/.gradle/chaekpool-api && ln -sfn /root/.gradle/chaekpool-api .gradle'
-        sh './gradlew build'
+        sh 'mkdir -p /home/gradle/.gradle/chaekpool-api && ln -sfn /home/gradle/.gradle/chaekpool-api .gradle'
+        sh './gradlew assemble --no-daemon'
     }
 }
 ```
 
 **동작 원리**:
 
-1. `/root/.gradle`은 `gradle-cache` Named Volume에 마운트되어 컨테이너 간 보존됨
+1. 호스트의 `/var/lib/jenkins/.gradle`이 컨테이너의 `/home/gradle/.gradle`에 바인드 마운트되어 빌드 간 보존됨
 2. 그 안에 `chaekpool-api/` 디렉토리를 생성
-3. 프로젝트의 `.gradle` → `/root/.gradle/chaekpool-api`로 심링크
+3. 프로젝트의 `.gradle` → `/home/gradle/.gradle/chaekpool-api`로 심링크
 4. CC 캐시가 `chaekpool-api/configuration-cache/`에 저장되어 다음 빌드에서 재사용
 
 **전제 조건**: `disableConcurrentBuilds()`로 동시 빌드가 없어야 캐시 충돌이 발생하지 않는다.
+
+### CI 캐시 적용 효과
+
+Jenkins 빌드 #29 (캐시 적용) 기준, 코드 변경 없이 재빌드 시 측정 결과:
+
+| 단계 | 캐시 미적용 (평균) | 캐시 적용 (#29) | 개선율 |
+|---|---|---|---|
+| Build (`assemble`) | ~1분 40초 | 19초 | ~81% 감소 |
+| Test (`cleanTest test`) | ~58초 | 10초 | ~83% 감소 |
+| **전체 파이프라인** | **~3분 4초** | **~52초** | **~72% 감소** |
+
+**캐시 구성별 효과**:
+
+- **Gradle 배포판 캐시**: 최초 1회 다운로드 후 재사용 (~5초 절약)
+- **Configuration Cache**: 태스크 그래프 재계산 스킵 (~80초 절약)
+- **의존성 캐시**: 라이브러리 재다운로드 방지
+- **Build Cache**: UP-TO-DATE 태스크 스킵
 
 ### 다른 CI 환경 적용 예시
 
@@ -195,14 +212,14 @@ cache:
 
 ### CC 캐시 초기화 (CI)
 
-CI에서 CC 관련 문제 발생 시, 심링크 대상의 캐시를 삭제한다.
+CI에서 CC 관련 문제 발생 시, 호스트의 캐시 디렉토리를 삭제한다.
 
 ```bash
-# Jenkins Docker 환경 (컨테이너 내부에서)
-rm -rf /root/.gradle/chaekpool-api/configuration-cache
+# Jenkins 호스트에서 CC만 삭제
+rm -rf /var/lib/jenkins/.gradle/chaekpool-api/configuration-cache
 
-# 또는 Named Volume 자체를 삭제 (호스트에서)
-docker volume rm gradle-cache
+# 전체 Gradle 캐시 초기화 (호스트에서)
+rm -rf /var/lib/jenkins/.gradle/*
 ```
 
 ---
