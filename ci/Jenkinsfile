@@ -2,7 +2,7 @@ pipeline {
     agent {
         dockerfile {
             filename 'ci/Dockerfile'
-            args '-u 0:0 -v gradle-cache:/root/.gradle -v /var/run/docker.sock:/var/run/docker.sock'
+            args '-u 0:0 -v /var/lib/jenkins/.gradle:/root/.gradle -v /var/run/docker.sock:/var/run/docker.sock'
         }
     }
 
