@@ -2,12 +2,8 @@ pipeline {
     agent {
         dockerfile {
             filename 'ci/Dockerfile'
-            args '-u 0:0 -v /var/lib/jenkins/.gradle:/root/.gradle -v /var/run/docker.sock:/var/run/docker.sock'
+            args '-u 0:0 -v /var/lib/jenkins/.gradle:/home/gradle/.gradle -v /var/run/docker.sock:/var/run/docker.sock'
         }
-    }
-
-    environment {
-        GRADLE_USER_HOME = '/root/.gradle'
     }
 
     options {
@@ -19,7 +15,7 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-                sh 'mkdir -p /root/.gradle/chaekpool-api && ln -sfn /root/.gradle/chaekpool-api .gradle'
+                sh 'mkdir -p /home/gradle/.gradle/chaekpool-api && ln -sfn /home/gradle/.gradle/chaekpool-api .gradle'
                 sh './gradlew assemble --no-daemon'
             }
         }
