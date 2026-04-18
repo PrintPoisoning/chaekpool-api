@@ -93,4 +93,10 @@ class ProviderAccountRepository(
             .where(PROVIDER_ACCOUNTS.USER_ID.eq(userId))
             .and(PROVIDER_ACCOUNTS.PROVIDER_ID.eq(providerId))
             .fetchOneInto(ProviderAccounts::class.java)
+
+    fun deleteByUserId(userId: UUID): Int =
+        dsl
+            .deleteFrom(PROVIDER_ACCOUNTS)
+            .where(PROVIDER_ACCOUNTS.USER_ID.eq(userId))
+            .execute()
 }

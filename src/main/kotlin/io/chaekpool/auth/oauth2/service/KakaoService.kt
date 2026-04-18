@@ -5,14 +5,23 @@ import io.chaekpool.auth.constant.AuthProvider
 import io.chaekpool.auth.oauth2.client.KakaoApiClient
 import io.chaekpool.auth.oauth2.client.KakaoAuthClient
 import io.chaekpool.auth.oauth2.config.KakaoAuthProperties
+import io.chaekpool.auth.oauth2.dto.KakaoApiAccountResponse
+import io.chaekpool.auth.oauth2.dto.KakaoAuthResult
 import io.chaekpool.auth.oauth2.dto.KakaoAuthTokenResponse
+import io.chaekpool.auth.oauth2.entity.RejoinTicketEntity
 import io.chaekpool.auth.oauth2.exception.ProviderNotFoundException
+import io.chaekpool.auth.oauth2.exception.RejoinTicketNotFoundException
 import io.chaekpool.auth.oauth2.repository.AuthProviderRepository
 import io.chaekpool.auth.oauth2.repository.ProviderAccountRepository
+import io.chaekpool.auth.oauth2.repository.RejoinTicketRepository
 import io.chaekpool.auth.token.dto.TokenPair
 import io.chaekpool.auth.token.service.TokenManager
 import io.chaekpool.common.util.HandleGenerator
+import io.chaekpool.common.util.UUIDv7
+import io.chaekpool.common.util.isTrueOrThrow
 import io.chaekpool.common.util.notNullOrThrow
+import io.chaekpool.generated.jooq.enums.UserStatusType
+import io.chaekpool.user.exception.UserNotFoundException
 import io.chaekpool.user.repository.UserRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.security.oauth2.core.AuthorizationGrantType
@@ -29,6 +38,7 @@ class KakaoService(
     private val authProviderRepository: AuthProviderRepository,
     private val userRepository: UserRepository,
     private val providerAccountRepository: ProviderAccountRepository,
+    private val rejoinTicketRepository: RejoinTicketRepository,
     private val tokenManager: TokenManager,
     private val props: KakaoAuthProperties,
     private val jsonMapper: JsonMapper
@@ -37,25 +47,74 @@ class KakaoService(
     private val log = KotlinLogging.logger {}
 
     @Transactional
-    fun authenticate(code: String): TokenPair {
+    fun authenticate(code: String): KakaoAuthResult {
         val kakaoToken = getKakaoTokens(code)
         val kakaoAccount = getKakaoAccount(kakaoToken.accessToken)
         val accountId = kakaoAccount.id.toString()
 
         val providerId = getKakaoProviderId()
-        val existingUserId = providerAccountRepository.findByProviderIdAndAccountId(providerId, accountId)?.userId
+        val existingProviderAccount = providerAccountRepository.findByProviderIdAndAccountId(providerId, accountId)
 
-        val userId = if (Objects.isNull(existingUserId)) {
-            createProviderAccount(providerId, accountId, kakaoAccount, kakaoToken)
-        } else {
-            updateProviderAccount(existingUserId!!, providerId, kakaoToken)
+        if (Objects.nonNull(existingProviderAccount)) {
+            val existingUserId = existingProviderAccount!!.userId
+            val existingUser = userRepository.findById(existingUserId)
+                .notNullOrThrow { UserNotFoundException() }
+
+            if (existingUser.status == UserStatusType.LEAVED) {
+                val ticketId = issueRejoinTicket(providerId, accountId, existingUserId, kakaoToken, kakaoAccount)
+                log.info { "[USER_REJOIN_REQUIRED] leavedUserId=$existingUserId ticketId=$ticketId" }
+                return KakaoAuthResult.RejoinRequired(ticketId)
+            }
+
+            updateProviderAccount(existingUserId, providerId, kakaoToken)
+            return KakaoAuthResult.Authenticated(issueAppTokens(existingUserId))
         }
 
-        userRepository.updateLastLoginAt(userId)
+        val newUserId = createProviderAccount(providerId, accountId, kakaoAccount, kakaoToken)
+        return KakaoAuthResult.Authenticated(issueAppTokens(newUserId))
+    }
 
-        val tokenPair = tokenManager.createTokenPair(userId, AuthProvider.KAKAO)
-        tokenManager.saveRefreshToken(userId, tokenPair.refreshToken)
+    @Transactional
+    fun rejoinWithRestore(rejoinTicket: String): TokenPair {
+        val ticket = findRejoinTicket(rejoinTicket)
+        val kakaoToken = jsonMapper.readValue(ticket.kakaoAuthTokenResponseJson, KakaoAuthTokenResponse::class.java)
+        val kakaoAccount = jsonMapper.readValue(ticket.kakaoAccountResponseJson, KakaoApiAccountResponse::class.java)
+        val userId = ticket.leavedUserId
 
+        val restored = userRepository.restoreById(
+            userId = userId,
+            nickname = kakaoAccount.kakaoAccount?.profile?.nickname,
+            profileImageUrl = kakaoAccount.kakaoAccount?.profile?.profileImageUrl,
+            thumbnailImageUrl = kakaoAccount.kakaoAccount?.profile?.thumbnailImageUrl
+        )
+        (restored > 0).isTrueOrThrow { RejoinTicketNotFoundException() }
+
+        providerAccountRepository.updateAuthRegistry(userId, ticket.providerId, kakaoToken)
+        providerAccountRepository.updateAccountRegistry(userId, ticket.providerId, kakaoAccount)
+
+        rejoinTicketRepository.deleteById(rejoinTicket)
+
+        val tokenPair = issueAppTokens(userId)
+        log.info { "[USER_REJOIN_RESTORE] userId=$userId" }
+        return tokenPair
+    }
+
+    @Transactional
+    fun rejoinWithFresh(rejoinTicket: String): TokenPair {
+        val ticket = findRejoinTicket(rejoinTicket)
+        val kakaoToken = jsonMapper.readValue(ticket.kakaoAuthTokenResponseJson, KakaoAuthTokenResponse::class.java)
+        val kakaoAccount = jsonMapper.readValue(ticket.kakaoAccountResponseJson, KakaoApiAccountResponse::class.java)
+        val leavedUserId = ticket.leavedUserId
+
+        userRepository.anonymizeById(leavedUserId)
+        providerAccountRepository.deleteByUserId(leavedUserId)
+
+        val newUserId = createProviderAccount(ticket.providerId, ticket.accountId, kakaoAccount, kakaoToken)
+
+        rejoinTicketRepository.deleteById(rejoinTicket)
+
+        val tokenPair = issueAppTokens(newUserId)
+        log.info { "[USER_REJOIN_FRESH] oldUserId=$leavedUserId newUserId=$newUserId" }
         return tokenPair
     }
 
@@ -116,7 +175,7 @@ class KakaoService(
     fun createProviderAccount(
         providerId: UUID,
         kakaoId: String,
-        kakaoUser: io.chaekpool.auth.oauth2.dto.KakaoApiAccountResponse,
+        kakaoUser: KakaoApiAccountResponse,
         kakaoToken: KakaoAuthTokenResponse
     ): UUID {
         val newUser = userRepository.save(
@@ -148,5 +207,35 @@ class KakaoService(
     ): UUID {
         providerAccountRepository.updateAuthRegistry(userId, providerId, kakaoAuthRegistry)
         return userId
+    }
+
+    private fun issueAppTokens(userId: UUID): TokenPair {
+        userRepository.updateLastLoginAt(userId)
+        val tokenPair = tokenManager.createTokenPair(userId, AuthProvider.KAKAO)
+        tokenManager.saveRefreshToken(userId, tokenPair.refreshToken)
+        return tokenPair
+    }
+
+    private fun issueRejoinTicket(
+        providerId: UUID,
+        accountId: String,
+        leavedUserId: UUID,
+        kakaoToken: KakaoAuthTokenResponse,
+        kakaoAccount: KakaoApiAccountResponse
+    ): String {
+        val entity = RejoinTicketEntity(
+            ticketId = UUIDv7.generate().toString(),
+            providerId = providerId,
+            accountId = accountId,
+            leavedUserId = leavedUserId,
+            kakaoAuthTokenResponseJson = jsonMapper.writeValueAsString(kakaoToken),
+            kakaoAccountResponseJson = jsonMapper.writeValueAsString(kakaoAccount)
+        )
+        return rejoinTicketRepository.save(entity).ticketId
+    }
+
+    private fun findRejoinTicket(rejoinTicket: String): RejoinTicketEntity {
+        return rejoinTicketRepository.findById(rejoinTicket)
+            .orElseThrow { RejoinTicketNotFoundException() }
     }
 }

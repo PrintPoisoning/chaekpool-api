@@ -3,8 +3,10 @@ package io.chaekpool.auth.oauth2.controller
 import io.chaekpool.auth.annotation.AccessUserId
 import io.chaekpool.auth.dto.TokenResponse
 import io.chaekpool.auth.oauth2.config.KakaoAuthProperties
+import io.chaekpool.auth.oauth2.dto.KakaoAuthResult
+import io.chaekpool.auth.oauth2.dto.KakaoCallbackResponse
+import io.chaekpool.auth.oauth2.dto.RejoinRequest
 import io.chaekpool.auth.oauth2.service.KakaoService
-import io.chaekpool.auth.token.dto.TokenPair
 import io.chaekpool.auth.token.provider.CookieProvider
 import io.micrometer.observation.annotation.Observed
 import io.swagger.v3.oas.annotations.Operation
@@ -15,6 +17,7 @@ import org.springframework.http.HttpHeaders.SET_COOKIE
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
@@ -53,18 +56,61 @@ class KakaoController(
 
     @Operation(
         summary = "카카오 OAuth 로그인",
-        description = "카카오 인가 코드로 OAuth 인증을 수행하고 JWT 토큰 쌍을 발급합니다",
+        description = "카카오 인가 코드로 OAuth 인증을 수행합니다. 탈퇴한 사용자일 경우 재가입 티켓을 반환합니다",
         security = []
     )
-    @SwaggerApiResponse(responseCode = "200", description = "로그인 성공")
+    @SwaggerApiResponse(responseCode = "200", description = "로그인 성공 또는 재가입 티켓 발급")
     @GetMapping("/callback")
     fun kakaoLogin(
         @RequestParam code: String,
         response: HttpServletResponse
-    ): ResponseEntity<TokenResponse> {
-        val tokenPair: TokenPair = kakaoService.authenticate(code)
-        val cookie = cookieProvider.refreshTokenCookie(tokenPair.refreshToken)
+    ): ResponseEntity<KakaoCallbackResponse> {
+        return when (val result = kakaoService.authenticate(code)) {
+            is KakaoAuthResult.Authenticated -> {
+                val cookie = cookieProvider.refreshTokenCookie(result.tokenPair.refreshToken)
+                response.addHeader(SET_COOKIE, cookie.toString())
+                ResponseEntity.ok(KakaoCallbackResponse.authenticated(result.tokenPair.accessToken))
+            }
 
+            is KakaoAuthResult.RejoinRequired -> {
+                ResponseEntity.ok(KakaoCallbackResponse.rejoinRequired(result.ticketId))
+            }
+        }
+    }
+
+    @Operation(
+        summary = "재가입 - 기존 계정 복원",
+        description = "재가입 티켓으로 탈퇴한 계정을 복원하고 JWT를 발급합니다. 카카오 최신 프로필로 갱신되며 userId/handle은 유지됩니다",
+        security = []
+    )
+    @SwaggerApiResponse(responseCode = "200", description = "복원 성공")
+    @SwaggerApiResponse(responseCode = "404", description = "재가입 티켓을 찾을 수 없음")
+    @PostMapping("/rejoin/restore")
+    fun rejoinWithRestore(
+        @RequestBody request: RejoinRequest,
+        response: HttpServletResponse
+    ): ResponseEntity<TokenResponse> {
+        val tokenPair = kakaoService.rejoinWithRestore(request.rejoinTicket)
+        val cookie = cookieProvider.refreshTokenCookie(tokenPair.refreshToken)
+        response.addHeader(SET_COOKIE, cookie.toString())
+
+        return ResponseEntity.ok(TokenResponse(tokenPair))
+    }
+
+    @Operation(
+        summary = "재가입 - 새 계정으로 시작",
+        description = "재가입 티켓으로 기존 계정을 익명화하고 새 계정을 생성합니다. 이전 활동 이력과 연결되지 않습니다",
+        security = []
+    )
+    @SwaggerApiResponse(responseCode = "200", description = "새 계정 생성 성공")
+    @SwaggerApiResponse(responseCode = "404", description = "재가입 티켓을 찾을 수 없음")
+    @PostMapping("/rejoin/fresh")
+    fun rejoinWithFresh(
+        @RequestBody request: RejoinRequest,
+        response: HttpServletResponse
+    ): ResponseEntity<TokenResponse> {
+        val tokenPair = kakaoService.rejoinWithFresh(request.rejoinTicket)
+        val cookie = cookieProvider.refreshTokenCookie(tokenPair.refreshToken)
         response.addHeader(SET_COOKIE, cookie.toString())
 
         return ResponseEntity.ok(TokenResponse(tokenPair))
