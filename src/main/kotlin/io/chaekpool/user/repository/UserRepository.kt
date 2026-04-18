@@ -1,5 +1,6 @@
 package io.chaekpool.user.repository
 
+import io.chaekpool.generated.jooq.enums.UserStatusType
 import io.chaekpool.generated.jooq.tables.pojos.Users
 import io.chaekpool.generated.jooq.tables.references.USERS
 import org.jooq.DSLContext
@@ -64,5 +65,43 @@ class UserRepository(private val dsl: DSLContext) {
             .set(USERS.LAST_LOGIN_AT, LocalDateTime.now())
             .set(USERS.UPDATED_AT, LocalDateTime.now())
             .where(USERS.ID.eq(userId))
+            .execute()
+
+    fun leaveById(userId: UUID): Int =
+        dsl
+            .update(USERS)
+            .set(USERS.STATUS, UserStatusType.LEAVED)
+            .set(USERS.UPDATED_AT, LocalDateTime.now())
+            .where(USERS.ID.eq(userId))
+            .and(USERS.STATUS.ne(UserStatusType.LEAVED))
+            .execute()
+
+    fun restoreById(
+        userId: UUID,
+        nickname: String?,
+        profileImageUrl: String?,
+        thumbnailImageUrl: String?
+    ): Int =
+        dsl
+            .update(USERS)
+            .set(USERS.STATUS, UserStatusType.ACTIVE)
+            .set(USERS.NICKNAME, nickname)
+            .set(USERS.PROFILE_IMAGE_URL, profileImageUrl)
+            .set(USERS.THUMBNAIL_IMAGE_URL, thumbnailImageUrl)
+            .set(USERS.UPDATED_AT, LocalDateTime.now())
+            .where(USERS.ID.eq(userId))
+            .and(USERS.STATUS.eq(UserStatusType.LEAVED))
+            .execute()
+
+    fun anonymizeById(userId: UUID): Int =
+        dsl
+            .update(USERS)
+            .setNull(USERS.EMAIL)
+            .setNull(USERS.NICKNAME)
+            .setNull(USERS.PROFILE_IMAGE_URL)
+            .setNull(USERS.THUMBNAIL_IMAGE_URL)
+            .set(USERS.UPDATED_AT, LocalDateTime.now())
+            .where(USERS.ID.eq(userId))
+            .and(USERS.STATUS.eq(UserStatusType.LEAVED))
             .execute()
 }
