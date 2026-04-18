@@ -3,7 +3,7 @@ pipeline {
         dockerfile {
             filename 'ci/Dockerfile'
             label 'docker'
-            args '-u 104:106 --group-add 104 -e HOME=/home/gradle -v /var/lib/jenkins-agent/.gradle:/home/gradle/.gradle -v /var/run/docker.sock:/var/run/docker.sock'
+            args '-u 1000:1000 --group-add 104 -v /var/lib/jenkins-agent/.gradle:/home/gradle/.gradle -v /var/run/docker.sock:/var/run/docker.sock'
         }
     }
 
