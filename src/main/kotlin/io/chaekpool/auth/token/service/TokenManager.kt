@@ -62,4 +62,9 @@ class TokenManager(
     fun deleteByJti(jti: String) {
         refreshTokenRepository.deleteById(jti)
     }
+
+    fun deleteAllByUserId(userId: UUID) {
+        val tokens = refreshTokenRepository.findByUserId(userId)
+        refreshTokenRepository.deleteAll(tokens)
+    }
 }

@@ -30,4 +30,8 @@ class TokenService(
         val jti = jwtProvider.getJti(refreshToken)
         tokenManager.deleteByJti(jti)
     }
+
+    fun deactivateAll(userId: UUID) {
+        tokenManager.deleteAllByUserId(userId)
+    }
 }

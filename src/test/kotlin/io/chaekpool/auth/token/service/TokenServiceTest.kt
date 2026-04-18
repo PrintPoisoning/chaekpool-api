@@ -137,4 +137,18 @@ class TokenServiceTest : BehaviorSpec({
             }
         }
     }
+
+    Given("userId가 주어졌을 때") {
+        When("deactivateAll을 호출하면") {
+            Then("해당 userId의 모든 refresh token이 삭제된다") {
+                val userId = UUIDv7.generate()
+
+                every { tokenManager.deleteAllByUserId(userId) } just runs
+
+                tokenService.deactivateAll(userId)
+
+                verify(exactly = 1) { tokenManager.deleteAllByUserId(userId) }
+            }
+        }
+    }
 })

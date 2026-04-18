@@ -19,4 +19,14 @@ class CookieProvider(
             .maxAge(cookieProperties.maxAge)
             .build()
     }
+
+    fun expiredRefreshTokenCookie(): ResponseCookie {
+        return ResponseCookie.from(REFRESH_TOKEN, "")
+            .httpOnly(cookieProperties.httpOnly)
+            .sameSite(cookieProperties.sameSite)
+            .secure(cookieProperties.secure)
+            .path(cookieProperties.path)
+            .maxAge(0)
+            .build()
+    }
 }
