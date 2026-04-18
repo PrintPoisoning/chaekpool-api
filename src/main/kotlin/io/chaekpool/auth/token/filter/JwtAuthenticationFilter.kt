@@ -5,11 +5,19 @@ import io.chaekpool.auth.token.provider.JwtProvider
 import io.chaekpool.auth.token.service.BlacklistManager
 import io.chaekpool.common.exception.ErrorCodeAccessDeniedException
 import io.chaekpool.common.exception.ErrorCodeBadCredentialsException
+import io.chaekpool.common.exception.ServiceException
 import io.chaekpool.common.exception.internal.ForbiddenException
 import io.chaekpool.common.exception.internal.UnauthorizedException
+import io.chaekpool.common.util.isTrueOrThrow
+import io.chaekpool.common.util.notNullOrThrow
+import io.chaekpool.generated.jooq.enums.UserStatusType
+import io.chaekpool.user.exception.UserLeavedException
+import io.chaekpool.user.exception.UserNotFoundException
+import io.chaekpool.user.repository.UserRepository
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.HttpHeaders.AUTHORIZATION
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
@@ -18,13 +26,17 @@ import org.springframework.security.web.access.AccessDeniedHandler
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
+import org.springframework.web.servlet.HandlerExceptionResolver
 
 @Component
 class JwtAuthenticationFilter(
     private val blacklistManager: BlacklistManager,
     private val jwtProvider: JwtProvider,
+    private val userRepository: UserRepository,
     private val authenticationEntryPoint: AuthenticationEntryPoint,
-    private val accessDeniedHandler: AccessDeniedHandler
+    private val accessDeniedHandler: AccessDeniedHandler,
+    @param:Qualifier("handlerExceptionResolver")
+    private val handlerExceptionResolver: HandlerExceptionResolver
 ) : OncePerRequestFilter() {
 
     override fun doFilterInternal(
@@ -42,6 +54,9 @@ class JwtAuthenticationFilter(
                 return
             } catch (e: ForbiddenException) {
                 accessDeniedHandler.handle(request, response, ErrorCodeAccessDeniedException(e, request))
+                return
+            } catch (e: ServiceException) {
+                handlerExceptionResolver.resolveException(request, response, null, e)
                 return
             }
         }
@@ -63,6 +78,11 @@ class JwtAuthenticationFilter(
         blacklistManager.assertToken(token)
 
         val userId = jwtProvider.getUserId(token)
+
+        val user = userRepository.findById(userId)
+            .notNullOrThrow { UserNotFoundException() }
+        (user.status != UserStatusType.LEAVED).isTrueOrThrow { UserLeavedException() }
+
         val authentication = UsernamePasswordAuthenticationToken(
             userId,
             null,

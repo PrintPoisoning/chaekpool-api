@@ -7,6 +7,10 @@ import io.chaekpool.auth.token.provider.JwtProvider
 import io.chaekpool.auth.token.service.BlacklistManager
 import io.chaekpool.common.exception.internal.ForbiddenException
 import io.chaekpool.common.util.UUIDv7
+import io.chaekpool.generated.jooq.enums.UserStatusType
+import io.chaekpool.generated.jooq.enums.UserVisibilityType
+import io.chaekpool.generated.jooq.tables.pojos.Users
+import io.chaekpool.user.repository.UserRepository
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.nulls.shouldBeNull
 import io.kotest.matchers.shouldBe
@@ -23,22 +27,34 @@ import org.springframework.mock.web.MockHttpServletResponse
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.web.AuthenticationEntryPoint
 import org.springframework.security.web.access.AccessDeniedHandler
+import org.springframework.web.servlet.HandlerExceptionResolver
 
 class JwtAuthenticationFilterTest : BehaviorSpec({
 
     lateinit var blacklistManager: BlacklistManager
     lateinit var jwtProvider: JwtProvider
+    lateinit var userRepository: UserRepository
     lateinit var authenticationEntryPoint: AuthenticationEntryPoint
     lateinit var accessDeniedHandler: AccessDeniedHandler
+    lateinit var handlerExceptionResolver: HandlerExceptionResolver
     lateinit var filter: JwtAuthenticationFilter
     lateinit var filterChain: FilterChain
 
     beforeTest {
         blacklistManager = mockk()
         jwtProvider = mockk()
+        userRepository = mockk()
         authenticationEntryPoint = mockk()
         accessDeniedHandler = mockk()
-        filter = JwtAuthenticationFilter(blacklistManager, jwtProvider, authenticationEntryPoint, accessDeniedHandler)
+        handlerExceptionResolver = mockk()
+        filter = JwtAuthenticationFilter(
+            blacklistManager,
+            jwtProvider,
+            userRepository,
+            authenticationEntryPoint,
+            accessDeniedHandler,
+            handlerExceptionResolver
+        )
         filterChain = mockk()
         every { filterChain.doFilter(any(), any()) } just runs
         SecurityContextHolder.clearContext()
@@ -77,7 +93,7 @@ class JwtAuthenticationFilterTest : BehaviorSpec({
         }
     }
 
-    Given("유효한 Bearer 토큰이 주어졌을 때") {
+    Given("유효한 Bearer 토큰이고 활성 사용자일 때") {
         val token = "valid-jwt-token"
         val userId = UUIDv7.generate()
         val request = MockHttpServletRequest()
@@ -86,14 +102,73 @@ class JwtAuthenticationFilterTest : BehaviorSpec({
 
         When("필터를 실행하면") {
             Then("authentication의 principal이 userId로 설정된다") {
+                val activeUser = Users(
+                    id = userId,
+                    handle = "user_abc12345",
+                    visibility = UserVisibilityType.PUBLIC,
+                    status = UserStatusType.ACTIVE
+                )
                 every { blacklistManager.assertToken(token) } just runs
                 every { jwtProvider.getUserId(token) } returns userId
+                every { userRepository.findById(userId) } returns activeUser
 
                 filter.doFilter(request, response, filterChain)
 
                 val authentication = SecurityContextHolder.getContext().authentication
                 authentication!!.principal shouldBe userId
                 verify(exactly = 1) { filterChain.doFilter(request, response) }
+            }
+        }
+    }
+
+    Given("유효한 Bearer 토큰이지만 탈퇴한 사용자일 때") {
+        val token = "valid-jwt-token-leaved"
+        val userId = UUIDv7.generate()
+        val request = MockHttpServletRequest()
+        request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer $token")
+        val response = MockHttpServletResponse()
+
+        When("필터를 실행하면") {
+            Then("handlerExceptionResolver가 UserLeavedException을 처리하고 filterChain은 호출되지 않는다") {
+                val leavedUser = Users(
+                    id = userId,
+                    handle = "user_abc12345",
+                    visibility = UserVisibilityType.PUBLIC,
+                    status = UserStatusType.LEAVED
+                )
+                every { blacklistManager.assertToken(token) } just runs
+                every { jwtProvider.getUserId(token) } returns userId
+                every { userRepository.findById(userId) } returns leavedUser
+                every { handlerExceptionResolver.resolveException(request, response, null, any()) } returns null
+
+                filter.doFilter(request, response, filterChain)
+
+                SecurityContextHolder.getContext().authentication.shouldBeNull()
+                verify(exactly = 1) { handlerExceptionResolver.resolveException(request, response, null, any()) }
+                verify(exactly = 0) { filterChain.doFilter(any(), any()) }
+            }
+        }
+    }
+
+    Given("유효한 Bearer 토큰이지만 DB에 사용자가 없을 때") {
+        val token = "valid-jwt-token-missing"
+        val userId = UUIDv7.generate()
+        val request = MockHttpServletRequest()
+        request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer $token")
+        val response = MockHttpServletResponse()
+
+        When("필터를 실행하면") {
+            Then("handlerExceptionResolver가 UserNotFoundException을 처리한다") {
+                every { blacklistManager.assertToken(token) } just runs
+                every { jwtProvider.getUserId(token) } returns userId
+                every { userRepository.findById(userId) } returns null
+                every { handlerExceptionResolver.resolveException(request, response, null, any()) } returns null
+
+                filter.doFilter(request, response, filterChain)
+
+                SecurityContextHolder.getContext().authentication.shouldBeNull()
+                verify(exactly = 1) { handlerExceptionResolver.resolveException(request, response, null, any()) }
+                verify(exactly = 0) { filterChain.doFilter(any(), any()) }
             }
         }
     }
